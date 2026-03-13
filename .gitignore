@@ -1,0 +1,24 @@
+# Dependencies - dont push this
+/node_modules
+
+# Production build directories
+/dist
+/build
+
+# Firebase specific generated files and logs
+.firebase/
+firebase-debug.log*
+firebase-debug.err*
+
+#keep firestore safef
+.env
+.env.local
+.env.*.local
+
+# IDEs and Editor directories
+.vscode/
+.idea/
+
+# OS specific files
+.DS_Store
+Thumbs.db
