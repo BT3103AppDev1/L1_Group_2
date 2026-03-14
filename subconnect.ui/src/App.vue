@@ -1,27 +1,20 @@
 <script setup>
-// This imports the form component you built
-import AddSubscription from './components/AddSubscription.vue';
+import Login from './components/Login.vue';
 </script>
 
 <template>
-  <main class="dashboard-container">
-    <h1>SubConnect Dummy Test</h1>
-    
-    <AddSubscription />
+  <main class="app-wrapper">
+    <h1>SubConnect</h1>
+    <Login />
   </main>
 </template>
 
-<style scoped>
-.dashboard-container {
+<style>
+.app-wrapper {
+  font-family: Arial, sans-serif;
   display: flex;
   flex-direction: column;
   align-items: center;
-  font-family: Arial, sans-serif;
-  padding: 40px;
-}
-
-h1 {
-  color: #333;
-  margin-bottom: 20px;
+  padding-top: 50px;
 }
 </style>
