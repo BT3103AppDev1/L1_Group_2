@@ -2,7 +2,10 @@
   <div class="split-layout">
     <div class="hero-section">
       <div class="hero-content">
-        <h1 class="hero-title">Take control of your subscriptions.</h1>
+        <h1 class="hero-title">
+          Take control of
+          <span style="white-space: nowrap">your subscriptions.</span>
+        </h1>
         <p class="hero-subtitle">
           Consolidate, track, and save on your monthly spending with
           SubConnect's powerful analytics dashboard.
