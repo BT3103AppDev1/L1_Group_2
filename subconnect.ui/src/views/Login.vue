@@ -1,6 +1,9 @@
 <template>
   <div class="auth-container">
-    <h2>Login to SubConnect</h2>
+    
+    <div class="logo-container">
+      <img src="../assets/subconnect-logo.png" alt="SubConnect Logo" class="login-logo" />
+    </div>
     
     <form @submit.prevent="handleLogin">
       <div class="form-group">
@@ -60,7 +63,7 @@ const handleLogin = async () => {
   }
 };
 
-// NEW: Handle the Google Popup
+// Handle the Google Popup
 const handleGoogleLogin = async () => {
   try {
     errorMessage.value = '';
@@ -78,13 +81,45 @@ const handleGoogleLogin = async () => {
 </script>
 
 <style scoped>
+/* 1. Main container - padding removed, overflow hidden added */
 .auth-container {
   max-width: 400px;
   margin: 0 auto;
-  padding: 2rem;
   border: 1px solid #ddd;
   border-radius: 8px;
   box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  overflow: hidden; /* IMPORTANT: This crops the image to the rounded corners */
+  display: flex;
+  flex-direction: column;
+}
+
+/* 2. Logo Wrapper */
+.logo-container {
+  width: 100%;
+  height: 180px; /* Adjust this number to make the image area taller or shorter! */
+  overflow: hidden;
+  display: block;
+}
+
+/* 3. The Image Itself - using object-fit to fill the space perfectly */
+.login-logo {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover; 
+}
+
+/* 4. Give the form its internal spacing back */
+form {
+  padding: 2rem 2rem 0 2rem;
+}
+
+/* 5. Give the bottom text its spacing back */
+.toggle-text {
+  text-align: center;
+  margin-top: 15px;
+  font-size: 0.9rem;
+  padding-bottom: 2rem; 
 }
 
 .form-group {
@@ -121,12 +156,6 @@ button:hover {
   text-align: center;
 }
 
-.toggle-text {
-  text-align: center;
-  margin-top: 15px;
-  font-size: 0.9rem;
-}
-
 .toggle-link {
   color: #007bff;
   cursor: pointer;
@@ -138,7 +167,6 @@ button:hover {
   color: #0056b3;
 }
 
-/* NEW: Google Button and Divider Styles */
 .divider {
   text-align: center;
   margin: 1.5rem 0;
@@ -166,7 +194,7 @@ button:hover {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px; /* Adds space between the logo and the text */
+  gap: 10px; 
 }
 
 .google-btn:hover {
