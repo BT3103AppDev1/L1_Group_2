@@ -14,6 +14,15 @@
       </div>
 
       <button type="submit">Log In</button>
+
+      <div class="divider">
+        <span>OR</span>
+      </div>
+
+      <button type="button" class="google-btn" @click="handleGoogleLogin">
+        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google logo" class="google-icon" />
+        Sign in with Google
+      </button>
       
       <p v-if="errorMessage" class="error-msg">{{ errorMessage }}</p>
     </form>
@@ -27,13 +36,14 @@
 
 <script setup>
 import { ref } from 'vue';
-import { useRouter } from 'vue-router'; // 1. Import the router tool
-import { loginUser } from '../services/auth.js'; 
+import { useRouter } from 'vue-router'; 
+// Import both the standard login and the new Google login!
+import { loginUser, loginWithGoogle } from '../services/auth.js'; 
 
 const email = ref('');
 const password = ref('');
 const errorMessage = ref('');
-const router = useRouter(); // 2. Turn on the router for this component
+const router = useRouter(); 
 
 const handleLogin = async () => {
   try {
@@ -42,12 +52,27 @@ const handleLogin = async () => {
     
     await loginUser(email.value, password.value);
     
-    // 3. The Magic Redirect! Send them straight to the dashboard.
+    // The Magic Redirect!
     router.push('/dashboard');
-    
   } catch (error) {
     console.error(error);
     errorMessage.value = "Invalid email or password. Please try again.";
+  }
+};
+
+// NEW: Handle the Google Popup
+const handleGoogleLogin = async () => {
+  try {
+    errorMessage.value = '';
+    console.log("Opening Google popup...");
+    
+    await loginWithGoogle();
+    
+    // Redirect to dashboard just like a normal login!
+    router.push('/dashboard');
+  } catch (error) {
+    console.error(error);
+    errorMessage.value = "Google sign-in failed or was cancelled.";
   }
 };
 </script>
@@ -96,7 +121,6 @@ button:hover {
   text-align: center;
 }
 
-/* Styles for the bottom link */
 .toggle-text {
   text-align: center;
   margin-top: 15px;
@@ -112,5 +136,45 @@ button:hover {
 
 .toggle-link:hover {
   color: #0056b3;
+}
+
+/* NEW: Google Button and Divider Styles */
+.divider {
+  text-align: center;
+  margin: 1.5rem 0;
+  color: #888;
+  font-size: 0.9rem;
+  position: relative;
+}
+
+.divider::before, .divider::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: 40%;
+  height: 1px;
+  background-color: #ddd;
+}
+
+.divider::before { left: 0; }
+.divider::after { right: 0; }
+
+.google-btn {
+  background-color: white;
+  color: #444;
+  border: 1px solid #ccc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px; /* Adds space between the logo and the text */
+}
+
+.google-btn:hover {
+  background-color: #f8f9fa;
+}
+
+.google-icon {
+  width: 18px;
+  height: 18px;
 }
 </style>

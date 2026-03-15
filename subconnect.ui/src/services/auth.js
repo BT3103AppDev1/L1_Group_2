@@ -2,9 +2,13 @@ import {
   createUserWithEmailAndPassword, 
   signInWithEmailAndPassword, 
   signOut, 
-  sendPasswordResetEmail 
+  sendPasswordResetEmail,
+  GoogleAuthProvider,     
+  signInWithPopup         
 } from "firebase/auth";
-import { auth } from "../firebase"; // Import the auth instance 
+import { auth } from "../firebase"; 
+
+const googleProvider = new GoogleAuthProvider();
 
 // login function
 export async function loginUser(email, password) {
@@ -16,6 +20,18 @@ export async function loginUser(email, password) {
   } catch (error) {
     console.error("Login Error:", error.message);
     throw error; // Throws error for frontend (e.g., "Invalid email or password")
+  }
+}
+
+// NEW: Google Sign-In function
+export async function loginWithGoogle() {
+  try {
+    const result = await signInWithPopup(auth, googleProvider);
+    console.log("Success! Logged in with Google as:", result.user.email);
+    return result.user;
+  } catch (error) {
+    console.error("Google Login Error:", error.message);
+    throw error; 
   }
 }
 
