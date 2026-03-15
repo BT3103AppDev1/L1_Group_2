@@ -1,28 +1,41 @@
 <template>
   <div class="auth-container">
-    
     <div class="logo-container">
-      <img src="../assets/subconnect-logo.png" alt="SubConnect Logo" class="register-logo" />
+      <img
+        src="../assets/subconnect-logo.png"
+        alt="SubConnect Logo"
+        class="register-logo"
+      />
     </div>
-    
+
     <form @submit.prevent="handleRegister">
       <div class="form-group">
         <label>Email</label>
-        <input v-model="email" type="email" placeholder="you@example.com" required />
+        <input
+          v-model="email"
+          type="email"
+          placeholder="you@example.com"
+          required
+        />
       </div>
 
       <div class="form-group">
         <label>Password</label>
-        <input v-model="password" type="password" placeholder="••••••••" required />
+        <input
+          v-model="password"
+          type="password"
+          placeholder="••••••••"
+          required
+        />
       </div>
 
       <button type="submit" class="signup-btn">Sign Up</button>
-      
+
       <p v-if="errorMessage" class="error-msg">{{ errorMessage }}</p>
     </form>
 
     <p class="toggle-text">
-      Already have an account? 
+      Already have an account?
       <router-link to="/login" class="toggle-link">Log in here</router-link>
     </p>
   </div>
@@ -30,26 +43,27 @@
 
 <script setup>
 import { ref } from 'vue';
-import { useRouter } from 'vue-router'; 
-import { registerUser } from '../services/auth.js'; 
+import { useRouter } from 'vue-router';
+import { registerUser } from '../services/auth.js';
 
 const email = ref('');
 const password = ref('');
 const errorMessage = ref('');
-const router = useRouter(); 
+const router = useRouter();
 
 const handleRegister = async () => {
   try {
-    errorMessage.value = ''; 
-    console.log("Attempting to register...");
-    
+    errorMessage.value = '';
+    console.log('Attempting to register...');
+
     await registerUser(email.value, password.value);
-    
+
     // Redirect
     router.push('/dashboard');
   } catch (error) {
     console.error(error);
-    errorMessage.value = "Error creating account. Password must be at least 6 characters, or email is already in use.";
+    errorMessage.value =
+      'Error creating account. Password must be at least 6 characters, or email is already in use.';
   }
 };
 </script>
@@ -61,8 +75,8 @@ const handleRegister = async () => {
   margin: 0 auto;
   border: 1px solid #ddd;
   border-radius: 8px;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-  overflow: hidden; 
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
   display: flex;
   flex-direction: column;
 }
@@ -70,7 +84,7 @@ const handleRegister = async () => {
 /* Logo Wrapper */
 .logo-container {
   width: 100%;
-  height: 180px; 
+  height: 180px;
   overflow: hidden;
   display: block;
 }
@@ -80,7 +94,7 @@ const handleRegister = async () => {
   display: block;
   width: 100%;
   height: 100%;
-  object-fit: cover; 
+  object-fit: cover;
 }
 
 /* Internal form spacing */
@@ -93,7 +107,7 @@ form {
   text-align: center;
   margin-top: 15px;
   font-size: 0.9rem;
-  padding-bottom: 2rem; 
+  padding-bottom: 2rem;
 }
 
 .form-group {
@@ -113,7 +127,7 @@ input {
 .signup-btn {
   width: 100%;
   padding: 0.75rem;
-  background-color: #28a745; 
+  background-color: #28a745;
   color: white;
   border: none;
   border-radius: 4px;

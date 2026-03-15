@@ -1,8 +1,3 @@
-<script setup>
-// Import our new smart Navbar!
-import Navbar from './components/Navbar.vue';
-</script>
-
 <template>
   <Navbar />
   
@@ -10,6 +5,11 @@ import Navbar from './components/Navbar.vue';
     <router-view></router-view> 
   </main>
 </template>
+
+<script setup>
+// Import our new smart Navbar!
+import Navbar from './components/Navbar.vue';
+</script>
 
 <style>
 /* Global reset to remove default browser margins */

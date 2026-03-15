@@ -1,8 +1,8 @@
 <template>
   <div class="dashboard-container">
-    <h2>Welcome to your Dashboard! </h2>
+    <h2>Welcome to your Dashboard!</h2>
     <p>You have successfully logged in.</p>
-    
+
     <div class="placeholder-box">
       <p>(charts and come here)</p>
     </div>
@@ -13,17 +13,17 @@
 
 <script setup>
 import { useRouter } from 'vue-router';
-import { logoutUser } from '../services/auth.js'; 
+import { logoutUser } from '../services/auth.js';
 
 const router = useRouter();
 
 const handleLogout = async () => {
   try {
-    console.log("Attempting to log out...");
-    await logoutUser(); 
-    router.push('/login'); 
+    console.log('Attempting to log out...');
+    await logoutUser();
+    router.push('/login');
   } catch (error) {
-    console.error("Error logging out:", error);
+    console.error('Error logging out:', error);
   }
 };
 </script>
