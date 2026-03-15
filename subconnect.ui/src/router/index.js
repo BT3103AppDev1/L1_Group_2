@@ -4,25 +4,25 @@ import { getAuth, onAuthStateChanged } from 'firebase/auth'; // Import Firebase 
 
 import Login from '../views/Login.vue';
 import Register from '../views/Register.vue';
-import Dashboard from '../views/Dashboard.vue'; 
+import Dashboard from '../views/Dashboard.vue';
 
 const routes = [
   { path: '/', redirect: '/login' },
-  { 
-    path: '/login', 
+  {
+    path: '/login',
     component: Login,
-    meta: { requiresGuest: true } 
+    meta: { requiresGuest: true },
   },
-  { 
-    path: '/register', 
+  {
+    path: '/register',
     component: Register,
-    meta: { requiresGuest: true } 
+    meta: { requiresGuest: true },
   },
-  { 
-    path: '/dashboard', 
+  {
+    path: '/dashboard',
     component: Dashboard,
-    meta: { requiresAuth: true } // This page is locked!
-  }
+    meta: { requiresAuth: true }, // This page is locked!
+  },
 ];
 
 const router = createRouter({
@@ -39,7 +39,7 @@ const getCurrentUser = () => {
         removeListener();
         resolve(user);
       },
-      reject
+      reject,
     );
   });
 };
