@@ -1,4 +1,3 @@
-// src/router/index.js
 import { createRouter, createWebHistory } from 'vue-router'
 import { getAuth, onAuthStateChanged } from 'firebase/auth'
 
@@ -8,8 +7,6 @@ import Dashboard from '../views/Dashboard.vue'
 
 const routes = [
   { path: '/', redirect: '/login' },
-
-  // Auth routes (no header/footer)
   {
     path: '/login',
     component: Login,
@@ -20,8 +17,6 @@ const routes = [
     component: Register,
     meta: { requiresGuest: true, layout: 'auth' },
   },
-
-  // Protected app routes (header/footer shown)
   {
     path: '/dashboard',
     component: Dashboard,
@@ -36,7 +31,7 @@ const routes = [
     path: '/alerts',
     component: () => import('../views/Alerts.vue'),
     meta: { requiresAuth: true },
-  },
+  }
 ]
 
 const router = createRouter({
@@ -52,29 +47,24 @@ const getCurrentUser = () => {
         removeListener()
         resolve(user)
       },
-      reject,
+      reject
     )
   })
 }
 
-// Navigation guard
-// This runs before every single page change
 router.beforeEach(async (to, from, next) => {
-  const requiresAuth = to.matched.some((record) => record.meta.requiresAuth);
-  const requiresGuest = to.matched.some((record) => record.meta.requiresGuest);
+  const requiresAuth = to.matched.some((record) => record.meta.requiresAuth)
+  const requiresGuest = to.matched.some((record) => record.meta.requiresGuest)
 
-  const currentUser = await getCurrentUser();
+  const currentUser = await getCurrentUser()
 
   if (requiresAuth && !currentUser) {
-    // 1. If the page is locked and they aren't logged in, kick to login
-    next('/login');
+    next('/login')
   } else if (requiresGuest && currentUser) {
-    // 2. If they are already logged in, don't let them see the login/register pages. Send to dashboard (Home page).
-    next('/dashboard');
+    next('/dashboard')
   } else {
-    // 3. Otherwise, let them through normally
-    next();
+    next()
   }
-});
+})
 
 export default router

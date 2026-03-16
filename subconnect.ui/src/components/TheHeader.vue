@@ -2,7 +2,6 @@
   <header class="app-header">
     <div class="header-inner">
 
-      <!-- Logo + brand -->
       <router-link to="/dashboard" class="brand">
         <div class="brand-icon">
           <img src="@/assets/subconnect-logo.png" alt="SubConnect" class="brand-logo" />
@@ -10,7 +9,6 @@
         <span class="brand-name">SubConnect</span>
       </router-link>
 
-      <!-- Nav tabs -->
       <nav class="main-nav">
         <router-link to="/dashboard" class="nav-link" active-class="nav-link--active">
           <svg class="nav-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6">
@@ -37,7 +35,6 @@
         </router-link>
       </nav>
 
-      <!-- Right side: bell + avatar -->
       <div class="header-right">
         <button class="icon-btn" title="Notifications">
           <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" width="20" height="20">
@@ -45,29 +42,50 @@
             <path d="M8 16.5a2 2 0 0 0 4 0"/>
           </svg>
         </button>
+        
         <div class="avatar" :title="userEmail">
           <svg viewBox="0 0 20 20" fill="currentColor" width="18" height="18">
             <path d="M10 10a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm-7 8a7 7 0 0 1 14 0H3z"/>
           </svg>
         </div>
+
+        <button @click="handleLogout" class="logout-btn">Log Out</button>
       </div>
 
     </div>
   </header>
 </template>
 
-<script>
-import { auth } from '@/firebase'
+<script setup>
+import { ref, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
+import { getAuth, onAuthStateChanged, signOut } from 'firebase/auth';
 
-export default {
-  name: 'TheHeader',
+const router = useRouter();
+const auth = getAuth();
+const userEmail = ref('');
 
-  computed: {
-    userEmail() {
-      return auth.currentUser?.email ?? ''
-    },
-  },
-}
+// Listen to Firebase and update the email variable automatically
+onMounted(() => {
+  onAuthStateChanged(auth, (user) => {
+    if (user) {
+      userEmail.value = user.email;
+    } else {
+      userEmail.value = '';
+    }
+  });
+});
+
+// The secure logout function
+const handleLogout = async () => {
+  try {
+    console.log("Attempting to log out...");
+    await signOut(auth);
+    router.push('/login'); 
+  } catch (error) {
+    console.error("Logout Error:", error);
+  }
+};
 </script>
 
 <style scoped>
@@ -200,5 +218,24 @@ export default {
   justify-content: center;
   cursor: pointer;
   border: 2px solid #6c47ff22;
+}
+
+/* ──  Logout Button ── */
+.logout-btn {
+  margin-left: 8px; /* Adds space between the avatar and the button */
+  padding: 6px 14px;
+  background-color: #fff1f1; /* Soft red background */
+  color: #dc3545; /* Standard danger red */
+  border: none;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.logout-btn:hover {
+  background-color: #dc3545;
+  color: #ffffff;
 }
 </style>

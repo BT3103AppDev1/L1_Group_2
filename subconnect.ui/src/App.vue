@@ -1,35 +1,25 @@
 <template>
-  <!-- Show Header if logged in -->
   <TheHeader v-if="!isAuthRoute" />
 
-  <!-- Main Content -->
   <main class="app-wrapper" :class="{ 'app-wrapper--auth': isAuthRoute }">
     <router-view />
   </main>
 
-  <!-- Show Footer if logged in -->
   <TheFooter v-if="!isAuthRoute" />
 </template>
 
-<script>
-import TheHeader from './components/TheHeader.vue'
-import TheFooter from './components/TheFooter.vue'
+<script setup>
+import { computed } from 'vue';
+import { useRoute } from 'vue-router';
+import TheHeader from './components/TheHeader.vue';
+import TheFooter from './components/TheFooter.vue';
 
-export default {
-  name: 'App',
+const route = useRoute();
 
-  components: {
-    TheHeader,
-    TheFooter,
-  },
-
-  computed: {
-    // Hide header/footer on login and register pages
-    isAuthRoute() {
-      return this.$route.meta?.layout === 'auth'
-    },
-  },
-}
+// Hide header/footer on login and register pages
+const isAuthRoute = computed(() => {
+  return route.meta?.layout === 'auth';
+});
 </script>
 
 <style>
@@ -63,6 +53,5 @@ body {
 .app-wrapper--auth {
   align-items: center;
   justify-content: center;
-  padding-top: 40px;
 }
 </style>
