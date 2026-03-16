@@ -95,6 +95,7 @@ const handleLogin = async () => {
   try {
     errorMessage.value = '';
     await loginUser(email.value, password.value);
+    sessionStorage.setItem('showWelcomeAnimation', 'true');
     router.push('/dashboard');
   } catch (error) {
     console.error(error);
@@ -106,6 +107,7 @@ const handleGoogleLogin = async () => {
   try {
     errorMessage.value = '';
     await loginWithGoogle();
+    sessionStorage.setItem('showWelcomeAnimation', 'true');
     router.push('/dashboard');
   } catch (error) {
     console.error(error);

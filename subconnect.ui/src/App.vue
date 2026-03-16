@@ -1,4 +1,6 @@
+
 <template>
+  <WelcomeOverlay />
   <TheHeader v-if="!isAuthRoute" />
 
   <main class="app-wrapper" :class="{ 'app-wrapper--auth': isAuthRoute }">
@@ -13,6 +15,7 @@ import { computed } from 'vue';
 import { useRoute } from 'vue-router';
 import TheHeader from './components/TheHeader.vue';
 import TheFooter from './components/TheFooter.vue';
+import WelcomeOverlay from './components/WelcomeOverlay.vue';
 
 const route = useRoute();
 
