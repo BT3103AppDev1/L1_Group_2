@@ -43,6 +43,10 @@
           </svg>
         </button>
         
+        <div class="user-info" v-if="userEmail">
+          <span class="user-email-text">{{ userEmail }}</span>
+        </div>
+        
         <div class="avatar" :title="userEmail">
           <svg viewBox="0 0 20 20" fill="currentColor" width="18" height="18">
             <path d="M10 10a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm-7 8a7 7 0 0 1 14 0H3z"/>
@@ -220,12 +224,27 @@ const handleLogout = async () => {
   border: 2px solid #6c47ff22;
 }
 
+/* ── Visible User Email ── */
+.user-info {
+  display: flex;
+  align-items: center;
+  margin-left: 8px;
+  margin-right: 4px;
+}
+
+.user-email-text {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #6b7080;
+  letter-spacing: 0.2px;
+}
+
 /* ──  Logout Button ── */
 .logout-btn {
-  margin-left: 8px; /* Adds space between the avatar and the button */
+  margin-left: 8px; 
   padding: 6px 14px;
-  background-color: #fff1f1; /* Soft red background */
-  color: #dc3545; /* Standard danger red */
+  background-color: #fff1f1; 
+  color: #dc3545; 
   border: none;
   border-radius: 8px;
   font-size: 0.85rem;
