@@ -536,7 +536,7 @@ export default {
   },
 
   methods: {
-    // ── Helpers ──────────────────────────────────────────────────
+    // ── Helper Functions ──────────────────────────────────────────────────
 
     // Expose toMonthlyCost to the template
     toMonthlyCost(sub) {

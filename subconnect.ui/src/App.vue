@@ -26,6 +26,15 @@ const isAuthRoute = computed(() => {
 </script>
 
 <style>
+/* 
+  Fluid base font size: 
+  scales between 14px (small screens) and 16px (large screens)
+*/
+html {
+  font-size: clamp(14px, 1vw, 16px);
+  scrollbar-gutter: stable; /* prevent layout shift when scrollbar appears */
+}
+
 /* Global reset */
 *, *::before, *::after {
   box-sizing: border-box;

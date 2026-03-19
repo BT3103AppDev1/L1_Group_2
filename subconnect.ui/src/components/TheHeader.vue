@@ -3,10 +3,8 @@
     <div class="header-inner">
 
       <router-link to="/dashboard" class="brand">
-        <div class="brand-icon">
-          <img src="@/assets/subconnect-logo.png" alt="SubConnect" class="brand-logo" />
-        </div>
-        <span class="brand-name">SubConnect</span>
+        <img src="@/assets/subconnect-logo.png" alt="SubConnect" class="brand-logo" />
+        <span><span class="brand-name">Sub</span><span class="brand-name-secondary">Connect</span></span>
       </router-link>
 
       <nav class="main-nav">
@@ -42,18 +40,24 @@
             <path d="M8 16.5a2 2 0 0 0 4 0"/>
           </svg>
         </button>
-        
-        <div class="user-info" v-if="userEmail">
-          <span class="user-email-text">{{ userEmail }}</span>
-        </div>
-        
-        <div class="avatar" :title="userEmail">
-          <svg viewBox="0 0 20 20" fill="currentColor" width="18" height="18">
-            <path d="M10 10a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm-7 8a7 7 0 0 1 14 0H3z"/>
-          </svg>
-        </div>
 
-        <button @click="handleLogout" class="logout-btn">Log Out</button>
+        <!-- Avatar with dropdown -->
+        <div class="avatar-wrapper" ref="avatarWrapper">
+          <div class="avatar" @click="toggleDropdown">
+            <svg viewBox="0 0 20 20" fill="currentColor" width="18" height="18">
+              <path d="M10 10a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm-7 8a7 7 0 0 1 14 0H3z"/>
+            </svg>
+          </div>
+
+          <div v-if="dropdownOpen" class="dropdown">
+            <div class="dropdown-email">{{ userEmail }}</div>
+            <div class="dropdown-divider"></div>
+            <button class="dropdown-item" @click="dropdownOpen = false">Profile</button>
+            <button class="dropdown-item" @click="dropdownOpen = false">Settings</button>
+            <div class="dropdown-divider"></div>
+            <button class="dropdown-item dropdown-item--danger" @click="handleLogout">Log Out</button>
+          </div>
+        </div>
       </div>
 
     </div>
@@ -61,33 +65,44 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, onBeforeUnmount } from 'vue';
 import { useRouter } from 'vue-router';
 import { getAuth, onAuthStateChanged, signOut } from 'firebase/auth';
 
 const router = useRouter();
 const auth = getAuth();
 const userEmail = ref('');
+const dropdownOpen = ref(false);
+const avatarWrapper = ref(null);
 
-// Listen to Firebase and update the email variable automatically
 onMounted(() => {
   onAuthStateChanged(auth, (user) => {
-    if (user) {
-      userEmail.value = user.email;
-    } else {
-      userEmail.value = '';
-    }
+    userEmail.value = user ? user.email : '';
   });
+
+  document.addEventListener('click', handleOutsideClick);
 });
 
-// The secure logout function
+onBeforeUnmount(() => {
+  document.removeEventListener('click', handleOutsideClick);
+});
+
+function toggleDropdown() {
+  dropdownOpen.value = !dropdownOpen.value;
+}
+
+function handleOutsideClick(e) {
+  if (avatarWrapper.value && !avatarWrapper.value.contains(e.target)) {
+    dropdownOpen.value = false;
+  }
+}
+
 const handleLogout = async () => {
   try {
-    console.log("Attempting to log out...");
     await signOut(auth);
-    router.push('/login'); 
+    router.push('/login');
   } catch (error) {
-    console.error("Logout Error:", error);
+    console.error('Logout Error:', error);
   }
 };
 </script>
@@ -124,7 +139,7 @@ const handleLogout = async () => {
 .brand-icon {
   width: 32px;
   height: 32px;
-  background: #6c47ff;
+  background: transparent;
   border-radius: 8px;
   display: flex;
   align-items: center;
@@ -133,15 +148,22 @@ const handleLogout = async () => {
 }
 
 .brand-logo {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
 }
 
 .brand-name {
-  font-size: 1rem;
+  font-size: 1.2rem;
   font-weight: 700;
   color: #1a1a2e;
+  letter-spacing: -0.02em;
+}
+
+.brand-name-secondary {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #6c47ff;
   letter-spacing: -0.02em;
 }
 
@@ -159,8 +181,8 @@ const handleLogout = async () => {
   gap: 7px;
   padding: 7px 14px;
   border-radius: 8px;
-  font-size: 0.875rem;
-  font-weight: 500;
+  font-size: 0.9rem;
+  font-weight: 600;
   color: #6b7080;
   text-decoration: none;
   transition: color 0.15s, background 0.15s;
@@ -178,8 +200,8 @@ const handleLogout = async () => {
 }
 
 .nav-icon {
-  width: 16px;
-  height: 16px;
+  width: 20px;
+  height: 20px;
   flex-shrink: 0;
 }
 
@@ -211,6 +233,11 @@ const handleLogout = async () => {
   color: #1a1a2e;
 }
 
+/* ── Avatar + Dropdown ── */
+.avatar-wrapper {
+  position: relative;
+}
+
 .avatar {
   width: 34px;
   height: 34px;
@@ -222,39 +249,64 @@ const handleLogout = async () => {
   justify-content: center;
   cursor: pointer;
   border: 2px solid #6c47ff22;
+  transition: background 0.15s;
 }
 
-/* ── Visible User Email ── */
-.user-info {
-  display: flex;
-  align-items: center;
-  margin-left: 8px;
-  margin-right: 4px;
+.avatar:hover {
+  background: #d0c6ff;
 }
 
-.user-email-text {
-  font-size: 0.85rem;
-  font-weight: 500;
+.dropdown {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  background: #ffffff;
+  border: 1px solid #e8e8f0;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  min-width: 200px;
+  padding: 6px;
+  z-index: 200;
+}
+
+.dropdown-email {
+  padding: 8px 10px;
+  font-size: 0.8rem;
   color: #6b7080;
-  letter-spacing: 0.2px;
+  font-weight: 500;
+  word-break: break-all;
 }
 
-/* ──  Logout Button ── */
-.logout-btn {
-  margin-left: 8px; 
-  padding: 6px 14px;
-  background-color: #fff1f1; 
-  color: #dc3545; 
+.dropdown-divider {
+  height: 1px;
+  background: #e8e8f0;
+  margin: 4px 0;
+}
+
+.dropdown-item {
+  display: block;
+  width: 100%;
+  padding: 8px 10px;
+  text-align: left;
+  background: none;
   border: none;
-  border-radius: 8px;
-  font-size: 0.85rem;
-  font-weight: 600;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #1a1a2e;
   cursor: pointer;
-  transition: background 0.2s, color 0.2s;
+  transition: background 0.15s;
 }
 
-.logout-btn:hover {
-  background-color: #dc3545;
-  color: #ffffff;
+.dropdown-item:hover {
+  background: #f4f4f8;
+}
+
+.dropdown-item--danger {
+  color: #dc3545;
+}
+
+.dropdown-item--danger:hover {
+  background: #fff1f1;
 }
 </style>
