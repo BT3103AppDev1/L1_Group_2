@@ -99,82 +99,83 @@
 
         <!-- Spending Trend Chart -->
         <div class="chart-card">
-          <div class="chart-header">
-            <div>
-              <h2 class="chart-title">Spending Trend</h2>
-              <p class="chart-sub">Monthly subscription expenditure over time.</p>
-            </div>
-            <span v-if="hasChartData" class="chart-range-badge">
-              {{ chartRangeLabel }}
-            </span>
+        <div class="chart-header">
+          <div>
+            <h2 class="chart-title">Spending Trend</h2>
+            <p class="chart-sub">Monthly subscription expenditure over time.</p>
           </div>
-
-          <div v-if="!hasChartData" class="chart-empty">
-            <p>No spending history yet. Add a subscription to get started.</p>
-          </div>
-          <div v-else class="chart-wrapper">
-            <line-chart
-              :data="chartData"
-              :colors="['#6c47ff']"
-              :curve="true"
-              :area="true"
-              :legend="false"
-              :ytitle="'Amount ($)'"
-              height="280px"
-            />
-          </div>
+          <span v-if="hasChartData" class="chart-range-badge">
+            {{ chartRangeLabel }}
+          </span>
         </div>
+
+        <div v-if="!hasChartData" class="chart-empty">
+          <p>No spending history yet. Add a subscription to get started.</p>
+        </div>
+        <div v-else class="chart-wrapper">
+          <line-chart
+            :data="chartData"
+            :colors="['#6c47ff']"
+            :curve="true"
+            :area="true"
+            :legend="false"
+            :ytitle="'Amount ($)'"
+            prefix="$"
+            height="280px"
+            :library="chartLibraryOptions"
+          />
+        </div>
+      </div>
 
         <!-- Active Alerts panel -->
         <div class="alerts-card">
-          <div class="alerts-header">
-            <div class="alerts-title-row">
-              <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" width="16" height="16">
-                <path d="M10 2a6 6 0 0 1 6 6v3l1.5 2.5H2.5L4 11V8a6 6 0 0 1 6-6z"/>
-                <path d="M8 16.5a2 2 0 0 0 4 0"/>
-              </svg>
-              <span>Active Alerts</span>
-            </div>
-            <router-link to="/alerts" class="view-all-link">View All</router-link>
+        <div class="alerts-header">
+          <div class="alerts-title-row">
+            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" width="16" height="16">
+              <path d="M10 2a6 6 0 0 1 6 6v3l1.5 2.5H2.5L4 11V8a6 6 0 0 1 6-6z"/>
+              <path d="M8 16.5a2 2 0 0 0 4 0"/>
+            </svg>
+            <span>Active Alerts</span>
           </div>
-
-          <div v-if="mockAlerts.length === 0" class="alerts-empty">
-            <p>You have no active alerts.</p>
-          </div>
-
-          <div v-else class="alerts-list">
-            <div
-              v-for="alert in mockAlerts"
-              :key="alert.id"
-              class="alert-item"
-            >
-              <div class="alert-icon-wrap" :class="`alert-icon-wrap--${alert.type}`">
-                <svg v-if="alert.type === 'renewal'" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" width="16" height="16">
-                  <circle cx="10" cy="10" r="8"/>
-                  <polyline points="10,6 10,10 13,12"/>
-                </svg>
-                <svg v-else viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" width="16" height="16">
-                  <circle cx="10" cy="10" r="8"/>
-                  <line x1="10" y1="7" x2="10" y2="11"/>
-                  <circle cx="10" cy="13.5" r="0.75" fill="currentColor"/>
-                </svg>
-              </div>
-              <div class="alert-body">
-                <p class="alert-name">{{ alert.name }}</p>
-                <p class="alert-desc">{{ alert.description }}</p>
-              </div>
-              <div class="alert-right">
-                <span class="alert-cost">${{ alert.cost }}</span>
-                <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" width="14" height="14" class="alert-chevron">
-                  <polyline points="7,4 13,10 7,16"/>
-                </svg>
-              </div>
-            </div>
-
-          </div>
+          <router-link to="/alerts" class="view-all-link">View All</router-link>
         </div>
 
+        <div v-if="mockAlerts.length === 0" class="alerts-empty">
+          <p>You have no active alerts.</p>
+        </div>
+
+        <div v-else class="alerts-list">
+          <div
+            v-for="alert in mockAlerts"
+            :key="alert.id"
+            class="alert-item"
+          >
+            <div class="alert-icon-wrap" :class="`alert-icon-wrap--${alert.type}`">
+              <svg v-if="alert.type === 'renewal'" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" width="16" height="16">
+                <circle cx="10" cy="10" r="8"/>
+                <polyline points="10,6 10,10 13,12"/>
+              </svg>
+              <svg v-else viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" width="16" height="16">
+                <circle cx="10" cy="10" r="8"/>
+                <line x1="10" y1="7" x2="10" y2="11"/>
+                <circle cx="10" cy="13.5" r="0.75" fill="currentColor"/>
+              </svg>
+            </div>
+            <div class="alert-body">
+              <p class="alert-name">{{ alert.name }}</p>
+              <p class="alert-desc">{{ alert.description }}</p>
+            </div>
+            <div class="alert-right">
+              <span class="alert-cost">${{ alert.cost }}</span>
+              <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" width="14" height="14" class="alert-chevron">
+                <polyline points="7,4 13,10 7,16"/>
+              </svg>
+            </div>
+          </div>
+        </div>
       </div>
+
+      </div> <!-- end middle-row -->
 
       <!-- ── Top Subscriptions table ────────────────────────────── -->
       <div class="table-section">
@@ -476,15 +477,18 @@ export default {
         .slice(0, 5)
     },
 
-    // Chart data: group by month, sum monthly costs
+    // Chart data: always show the last 12 months
     // vue-chartkick expects { 'Label': value, ... }
     chartData() {
-      const map = this.buildMonthMap()
-      const sorted = Object.keys(map).sort()
+      const map = this.buildMonthMap() // keys are 'YYYY-MM'
+      const now = new Date()
       const data = {}
-      sorted.forEach((key) => {
-        data[key] = parseFloat(map[key].toFixed(2))
-      })
+      for (let i = 11; i >= 0; i--) {
+        const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+        const label = d.toLocaleString('default', { month: 'short', year: 'numeric' })
+        data[label] = parseFloat((map[key] || 0).toFixed(2))
+      }
       return data
     },
 
@@ -501,6 +505,35 @@ export default {
       return `${keys[0]} – ${keys[keys.length - 1]}`
     },
 
+    chartLibraryOptions() {
+      return {
+        plugins: {
+          tooltip: {
+            titleFont: { size: 15 },
+            bodyFont: { size: 14 },
+            padding: 14,
+            boxPadding: 6,
+          },
+        },
+        scales: {
+          x: {
+            type: 'category',
+            ticks: {
+              autoSkip: false,
+              maxRotation: 0,
+              minRotation: 0,
+              font: { size: 10 },
+              callback: function (val) {
+                const label = this.getLabelForValue(val)
+                const parts = label.split(' ')
+                return [parts[0], parts[1]]
+              },
+            },
+          },
+        },
+      }
+    },
+
     // Warn if a subscription with the same name already exists
     duplicateWarning() {
       if (!this.form.serviceName) return false
@@ -509,6 +542,15 @@ export default {
           s.serviceName.toLowerCase() === this.form.serviceName.toLowerCase() &&
           s.id !== this.editingId
       )
+    },
+  },
+
+  watch: {
+    'form.startDate'(val) {
+      if (val) this.autoSetNextBillingDate()
+    },
+    'form.billingCycle'() {
+      if (this.form.startDate) this.autoSetNextBillingDate()
     },
   },
 
@@ -538,24 +580,50 @@ export default {
   methods: {
     // ── Helper Functions ──────────────────────────────────────────────────
 
+    autoSetNextBillingDate() {
+      const d = new Date(this.form.startDate)
+      if (isNaN(d)) return
+      if (this.form.billingCycle === 'Annually') {
+        d.setFullYear(d.getFullYear() + 1)
+      } else {
+        d.setMonth(d.getMonth() + 1)
+      }
+      this.form.nextBillingDate = d.toISOString().slice(0, 10)
+    },
+
     // Expose toMonthlyCost to the template
     toMonthlyCost(sub) {
       return toMonthlyCost(sub)
     },
 
-    // Build a { 'Mon YYYY': totalMonthlyCost } map from subscriptions
+    // Build a { 'YYYY-MM': totalMonthlyCost } map from subscriptions.
+    // Each subscription contributes its monthly cost from its start month
+    // through to the current month (since we have no end date for cancellations).
     buildMonthMap() {
       const map = {}
+      const now = new Date()
+      const currentKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+
       this.subscriptions.forEach((s) => {
         let dateRef = null
-        if (s.createdAt?.toDate) {
-          dateRef = s.createdAt.toDate()
-        } else if (s.startDate) {
+        if (s.startDate) {
           dateRef = new Date(s.startDate)
+        } else if (s.createdAt?.toDate) {
+          dateRef = s.createdAt.toDate()
         }
         if (!dateRef || isNaN(dateRef)) return
-        const label = dateRef.toLocaleString('default', { month: 'short', year: 'numeric' })
-        map[label] = (map[label] || 0) + toMonthlyCost(s)
+
+        const monthlyCost = toMonthlyCost(s)
+        let y = dateRef.getFullYear()
+        let m = dateRef.getMonth() + 1
+
+        while (true) {
+          const key = `${y}-${String(m).padStart(2, '0')}`
+          if (key > currentKey) break
+          map[key] = (map[key] || 0) + monthlyCost
+          m++
+          if (m > 12) { m = 1; y++ }
+        }
       })
       return map
     },
@@ -1311,8 +1379,7 @@ export default {
 
 /* ── Responsive ── */
 @media (max-width: 900px) {
-  .middle-row { grid-template-columns: 1fr; }
-  .summary-grid { grid-template-columns: 1fr 1fr; }
+.summary-grid { grid-template-columns: 1fr 1fr; }
 }
 @media (max-width: 600px) {
   .summary-grid { grid-template-columns: 1fr; }
