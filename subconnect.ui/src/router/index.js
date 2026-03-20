@@ -22,6 +22,13 @@ const routes = [
     component: Dashboard,
     meta: { requiresAuth: true },
   },
+
+   {
+    path: '/profile',
+    component: () => import('../views/Profile.vue'),
+    meta: { requiresAuth: true },
+  },
+
   {
     path: '/comparison',
     component: () => import('../views/Comparison.vue'),

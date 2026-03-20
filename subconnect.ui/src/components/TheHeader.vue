@@ -41,18 +41,20 @@
           </svg>
         </button>
 
-        <!-- Avatar with dropdown -->
         <div class="avatar-wrapper" ref="avatarWrapper">
-          <div class="avatar" @click="toggleDropdown">
-            <svg viewBox="0 0 20 20" fill="currentColor" width="18" height="18">
+          <div class="avatar" @click="toggleDropdown" :title="displayName || userEmail">
+            <img v-if="photoURL" :src="photoURL" alt="Profile" class="avatar-img-real" />
+            
+            <svg v-else viewBox="0 0 20 20" fill="currentColor" width="18" height="18">
               <path d="M10 10a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm-7 8a7 7 0 0 1 14 0H3z"/>
             </svg>
           </div>
 
           <div v-if="dropdownOpen" class="dropdown">
-            <div class="dropdown-email">{{ userEmail }}</div>
+            <div class="dropdown-email">{{ displayName || userEmail }}</div>
             <div class="dropdown-divider"></div>
-            <button class="dropdown-item" @click="dropdownOpen = false">Profile</button>
+            
+            <button class="dropdown-item" @click="goToProfile">Profile</button>
             <button class="dropdown-item" @click="dropdownOpen = false">Settings</button>
             <div class="dropdown-divider"></div>
             <button class="dropdown-item dropdown-item--danger" @click="handleLogout">Log Out</button>
@@ -71,13 +73,26 @@ import { getAuth, onAuthStateChanged, signOut } from 'firebase/auth';
 
 const router = useRouter();
 const auth = getAuth();
+
+// Added refs for the new profile data
 const userEmail = ref('');
+const displayName = ref('');
+const photoURL = ref('');
+
 const dropdownOpen = ref(false);
 const avatarWrapper = ref(null);
 
 onMounted(() => {
   onAuthStateChanged(auth, (user) => {
-    userEmail.value = user ? user.email : '';
+    if (user) {
+      userEmail.value = user.email;
+      displayName.value = user.displayName || ''; // Grab the name
+      photoURL.value = user.photoURL || '';       // Grab the photo
+    } else {
+      userEmail.value = '';
+      displayName.value = '';
+      photoURL.value = '';
+    }
   });
 
   document.addEventListener('click', handleOutsideClick);
@@ -97,8 +112,15 @@ function handleOutsideClick(e) {
   }
 }
 
+// NEW: Navigate to the Profile page and close the dropdown
+function goToProfile() {
+  dropdownOpen.value = false;
+  router.push('/profile');
+}
+
 const handleLogout = async () => {
   try {
+    dropdownOpen.value = false; // Close dropdown just in case
     await signOut(auth);
     router.push('/login');
   } catch (error) {
@@ -250,10 +272,18 @@ const handleLogout = async () => {
   cursor: pointer;
   border: 2px solid #6c47ff22;
   transition: background 0.15s;
+  overflow: hidden; /* Added to keep the image inside the circle */
 }
 
 .avatar:hover {
   background: #d0c6ff;
+}
+
+/* NEW: Styles the actual uploaded photo */
+.avatar-img-real {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .dropdown {

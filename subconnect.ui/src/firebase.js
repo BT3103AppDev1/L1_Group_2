@@ -1,7 +1,8 @@
 // src/firebase.js
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore"; // 1. Import Firestore
+import { getFirestore } from "firebase/firestore"; 
+import { getStorage } from "firebase/storage"; // 1. Import Storage
 
 // Your web app's Firebase configuration using the .env file variables
 const firebaseConfig = {
@@ -16,4 +17,5 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 
 export const auth = getAuth(app);
-export const db = getFirestore(app); // 2. Initialize and export the database
+export const db = getFirestore(app); 
+export const storage = getStorage(app); // 2. Initialize and export Storage
