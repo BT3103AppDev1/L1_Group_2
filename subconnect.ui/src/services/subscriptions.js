@@ -22,6 +22,7 @@ import {
   serverTimestamp,
 } from 'firebase/firestore';
 import { db } from '@/firebase';
+import { createAlert } from './alerts';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -76,13 +77,15 @@ export async function getBudget(userId) {
 
 /** Set or update the user's monthly budget cap. */
 export async function setBudget(userId, amount) {
+  const newAmount = Number(amount);
   await setDoc(
     userDocRef(userId),
-    { budgetCap: Number(amount) },
+    { budgetCap: newAmount },
     { merge: true },
   );
-}
 
+  await checkBudgetAndTriggerAlert(userId);
+}
 // ─── Subscriptions CRUD ──────────────────────────────────────────────────────
 
 /**
@@ -113,6 +116,7 @@ export async function addSubscription(userId, sub) {
     notes: sub.notes || '',
     createdAt: serverTimestamp(),
   });
+  await checkBudgetAndTriggerAlert(userId);
   return docRef.id;
 }
 
@@ -128,6 +132,7 @@ export async function updateSubscription(userId, subId, updates) {
     payload.billingAmount = Number(payload.billingAmount);
   }
   await updateDoc(subDocRef(userId, subId), payload);
+  await checkBudgetAndTriggerAlert(userId);
 }
 
 /**
@@ -135,4 +140,40 @@ export async function updateSubscription(userId, subId, updates) {
  */
 export async function deleteSubscription(userId, subId) {
   await deleteDoc(subDocRef(userId, subId));
+  await checkBudgetAndTriggerAlert(userId);
+}
+
+async function checkBudgetAndTriggerAlert(userId) {
+  console.log("Running budget check...");
+
+  const budget = await getBudget(userId);
+  console.log("Budget from DB:", budget);
+
+  if (budget === null || budget === undefined) {
+    console.log("No budget set, exiting");
+    return;
+  }
+
+  const subs = await getSubscriptions(userId);
+  console.log("Subscriptions:", subs);
+
+  const monthlyTotal = subs.reduce(
+    (sum, sub) => sum + toMonthlyCost(sub),
+    0
+  );
+
+  console.log("Monthly total:", monthlyTotal);
+
+  if (monthlyTotal > Number(budget)) {
+    console.log("Budget exceeded. Creating alert...");
+
+    await createAlert(userId, {
+      title: 'Budget Exceeded',
+      message: `You have spent $${monthlyTotal.toFixed(2)} which exceeds your budget of $${budget}.`,
+      type: 'budget',
+      severity: 'warning'
+    });
+  } else {
+    console.log("Budget not exceeded.");
+  }
 }
