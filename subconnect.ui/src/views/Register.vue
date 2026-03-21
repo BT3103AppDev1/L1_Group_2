@@ -21,12 +21,28 @@
 
       <div class="form-group">
         <label>Password</label>
-        <input
-          v-model="password"
-          type="password"
-          placeholder="••••••••"
-          required
-        />
+        <div class="password-wrapper">
+          <input
+            v-model="password"
+            :type="showPassword ? 'text' : 'password'"
+            placeholder="••••••••"
+            required
+          />
+          <button
+            type="button"
+            class="toggle-password-btn"
+            @click="showPassword = !showPassword"
+          >
+            <svg v-if="!showPassword" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+              <circle cx="12" cy="12" r="3"></circle>
+            </svg>
+            <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+              <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+              <line x1="1" y1="1" x2="23" y2="23"></line>
+            </svg>
+          </button>
+        </div>
       </div>
 
       <button type="submit" class="signup-btn">Sign Up</button>
@@ -48,6 +64,7 @@ import { registerUser } from '../services/auth.js';
 
 const email = ref('');
 const password = ref('');
+const showPassword = ref(false);
 const errorMessage = ref('');
 const router = useRouter();
 
@@ -58,7 +75,6 @@ const handleRegister = async () => {
 
     await registerUser(email.value, password.value);
 
-    // Redirect
     router.push('/dashboard');
   } catch (error) {
     console.error(error);
@@ -69,7 +85,6 @@ const handleRegister = async () => {
 </script>
 
 <style scoped>
-/* Main container - perfectly matching the login page */
 .auth-container {
   max-width: 400px;
   margin: 0 auto;
@@ -81,7 +96,6 @@ const handleRegister = async () => {
   flex-direction: column;
 }
 
-/* Logo Wrapper */
 .logo-container {
   width: 100%;
   height: 180px;
@@ -89,7 +103,6 @@ const handleRegister = async () => {
   display: block;
 }
 
-/* The Image Itself */
 .register-logo {
   display: block;
   width: 100%;
@@ -97,12 +110,10 @@ const handleRegister = async () => {
   object-fit: cover;
 }
 
-/* Internal form spacing */
 form {
   padding: 2rem 2rem 0 2rem;
 }
 
-/* Bottom text spacing */
 .toggle-text {
   text-align: center;
   margin-top: 15px;
@@ -123,7 +134,37 @@ input {
   border-radius: 4px;
 }
 
-/* Specific green styling for the Sign Up button */
+.password-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.password-wrapper input {
+  width: 100%;
+  padding-right: 40px;
+}
+
+.toggle-password-btn {
+  position: absolute;
+  right: 10px;
+  margin-top: 0.25rem;
+  width: auto;
+  padding: 0;
+  background: none;
+  color: #6b7080;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.toggle-password-btn:hover {
+  background: none;
+  color: #1a1a2e;
+}
+
 .signup-btn {
   width: 100%;
   padding: 0.75rem;
