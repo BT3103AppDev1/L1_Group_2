@@ -141,7 +141,7 @@
         </div>
 
         <div v-if="mockAlerts.length === 0" class="alerts-empty">
-          <p>You have no active alerts.</p>
+          <DashboardAlertsPreview />
         </div>
 
         <div v-else class="alerts-list">
@@ -372,6 +372,7 @@
     </Teleport>
 
   </div>
+  
 </template>
 
 <script>
@@ -386,6 +387,7 @@ import {
   setBudget,
   toMonthlyCost,
 } from '@/services/subscriptions'
+import DashboardAlertsPreview from "@/components/DashboardAlertsPreview.vue"
 
 const AVATAR_COLORS = [
   '#6c47ff', '#3b82f6', '#10b981', '#f59e0b',
