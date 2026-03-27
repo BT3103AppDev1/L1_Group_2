@@ -11,16 +11,24 @@
       </div>
 
       <div class="header-actions">
-        <button class="btn-secondary">Mark all as read</button>
-        <button class="btn-secondary">Filter</button>
+      <button class="btn-secondary"
+        @click="handleMarkAllAsRead"
+      >
+        Mark all as read
+        </button>
+        <button class="btn-secondary"
+          @click="showUnreadOnly = !showUnreadOnly"
+        > 
+          {{ showUnreadOnly ? "Show All" : "Show Unread Only" }}
+        </button>
       </div>
     </div>
 
-    <!-- Stats Cards -->
+    
     <div class="stats-grid">
       <div class="stat-card">
         <p class="stat-label">Unread Notifications</p>
-        <p class="stat-value">{{ alerts.length }}</p>
+        <p class="stat-value">{{ unreadCount }}</p>
       </div>
 
       <div class="stat-card">
@@ -34,10 +42,10 @@
       </div>
     </div>
 
-    <!-- Main Layout -->
+    
     <div class="main-grid">
 
-      <!-- LEFT COLUMN -->
+      
       <div class="alerts-column">
 
         <h2 class="section-title">All Alerts</h2>
@@ -47,9 +55,10 @@
         </div>
 
         <div
-          v-for="alert in alerts"
+          v-for="alert in filteredAlerts"
           :key="alert.id"
           class="alert-card"
+          :class="{ 'read-alert': alert.read }"
         >
           <div class="alert-content">
             <div class="alert-header">
@@ -60,10 +69,22 @@
             <p class="alert-message">{{ alert.message }}</p>
 
             <div class="alert-footer">
-              <span class="alert-severity">{{ alert.severity }}</span>
+              <span class="alert-severity"
+                :class="alert.severity"
+              >
+              {{ formatSeverity(alert) }}
+              </span>
               <div class="alert-actions">
-                <button class="link-btn">Mark as read</button>
-                <button class="link-btn danger">Delete</button>
+                <button class="link-btn"
+                  @click="handleMarkAsRead(alert.id)"
+                >
+                Mark as read
+                </button>
+                <button class="link-btn danger"
+                  @click="handleDelete(alert.id)"
+                >
+                  Delete
+                </button>
               </div>
             </div>
           </div>
@@ -71,14 +92,70 @@
 
       </div>
 
-      <!-- RIGHT COLUMN -->
+      
       <div class="sidebar">
 
         <div class="sidebar-card">
-          <h3>Preferences</h3>
-          <p>Customize how you receive alerts.</p>
-        </div>
+  <h3>⚙️ Preferences</h3>
+  <p class="muted">Customize how you receive alerts.</p>
 
+  <!-- Email Notifications -->
+  <div class="pref-section">
+    <div 
+      class="pref-header"
+      @click="showEmailPrefs = !showEmailPrefs"
+    >
+      <span>Email Notifications</span>
+      <span>{{ showEmailPrefs ? "▲" : "▼" }}</span>
+    </div>
+
+    <div v-if="showEmailPrefs" class="pref-body">
+      <label>
+        <input 
+          type="checkbox"
+          v-model="preferences.emailNotifications"
+          @change="savePreferences"
+        />
+        Enable email notifications
+      </label>
+    </div>
+  </div>
+
+  <!-- Budget Threshold -->
+  <div class="pref-section">
+    <div 
+      class="pref-header"
+      @click="showBudgetPrefs = !showBudgetPrefs"
+    >
+      <span>Budget Threshold</span>
+      <span>{{ showBudgetPrefs ? "▲" : "▼" }}</span>
+    </div>
+
+    <div v-if="showBudgetPrefs" class="pref-body">
+      <label>Monthly Budget Cap ($)</label>
+      <input 
+        type="number"
+        v-model="preferences.budgetThreshold"
+        @change="savePreferences"
+      />
+    </div>
+  </div>
+  <div class="sidebar-card insight-card">
+  <div class="insight-header">
+    <span>💡</span>
+    <h4>Did you know?</h4>
+  </div>
+
+  <p>
+    Users who set budget caps save an average of $240 per year 
+    by catching unused recurring payments early.
+  </p>
+
+  <router-link to="/budget" class="insight-link">
+    Learn more about Budget Setup →
+  </router-link>
+</div>
+</div>
         <div class="sidebar-card">
           <h3>Recently Processed</h3>
           <p>Spotify Duo — $14.99</p>
@@ -91,22 +168,170 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue"
+import { ref, computed, onMounted } from "vue"
 import { getAuth } from "firebase/auth"
-import { getAlerts } from "../services/alerts"
+import { 
+  getAlerts, 
+  deleteAlert, 
+  markAlertAsRead, 
+  markAllAlertsAsRead 
+} from "../services/alerts"
+import { 
+  addDoc, 
+  collection, 
+  updateDoc, 
+  doc, 
+  serverTimestamp 
+} from "firebase/firestore"
+
+import { db } from "../firebase"
+import { getSubscriptions } from "../services/subscriptions"
+
+const subscriptions = ref([])
 
 const alerts = ref([])
+const showUnreadOnly = ref(false)
+
+const unreadCount = computed(() =>
+  alerts.value.filter(alert => !alert.read).length
+)
+
+const filteredAlerts = computed(() => {
+  if (showUnreadOnly.value) {
+    return alerts.value.filter(alert => !alert.read)
+  }
+  return alerts.value
+})
+
 const auth = getAuth()
 
 const loadAlerts = async () => {
   const user = auth.currentUser
   if (!user) return
-
   alerts.value = await getAlerts(user.uid)
+  const loadPreferences = async () => {
+  const user = auth.currentUser
+  if (!user) return
+
+  preferences.value = await getPreferences(user.uid)
+}
 }
 
-onMounted(loadAlerts)
+const handleDelete = async (alertId) => {
+  const user = auth.currentUser
+  if (!user) return
+
+  alerts.value = alerts.value.filter(a => a.id !== alertId)
+  await deleteAlert(user.uid, alertId)
+}
+
+const handleMarkAsRead = async (alertId) => {
+  const user = auth.currentUser
+  if (!user) return
+
+  await markAlertAsRead(user.uid, alertId)
+
+  alerts.value = alerts.value.map(alert =>
+    alert.id === alertId
+      ? { ...alert, read: true }
+      : alert
+  )
+}
+
+const handleMarkAllAsRead = async () => {
+  const user = auth.currentUser
+  if (!user) return
+
+  await markAllAlertsAsRead(user.uid)
+
+  alerts.value = alerts.value.map(alert => ({
+    ...alert,
+    read: true
+  }))
+}
+
+import { getPreferences, updatePreferences } from "../services/preferences"
+const showEmailPrefs = ref(false)
+const showBudgetPrefs = ref(false)
+const preferences = ref({
+  emailNotifications: true,
+  budgetThreshold: 500
+})
+
+const savePreferences = async () => {
+  const user = auth.currentUser
+  if (!user) return
+
+  await updatePreferences(user.uid, preferences.value)
+}
+
+const checkRenewals = async () => {
+  console.log("✅ Renewal check started")
+  console.log("Subscriptions:", subscriptions.value)
+
+  const user = auth.currentUser
+  if (!user) return
+
+  const today = new Date()
+  today.setHours(0,0,0,0)
+
+  subscriptions.value.forEach(async (sub) => {
+
+  if (!sub.nextBillingDate) return
+
+  const renewalDate = sub.nextBillingDate.toDate
+    ? sub.nextBillingDate.toDate()
+    : new Date(sub.nextBillingDate)
+
+  renewalDate.setHours(0,0,0,0)
+
+  const diffInDays = Math.round(
+    (renewalDate - today) / (1000 * 60 * 60 * 24)
+  )
+
+  if (diffInDays >= 0 && diffInDays <= 2 && !sub.renewalAlertCreated) {
+
+    await addDoc(
+      collection(db, `users/${auth.currentUser.uid}/alerts`),
+      {
+        title: `Upcoming Renewal: ${sub.serviceName}`,
+        message: `Your subscription renews in ${diffInDays} days.`,
+        type: "renewal",
+        severity: "warning",
+        amount: sub.billingAmount,
+        read: false,
+        createdAt: serverTimestamp()
+      }
+    )
+
+    await updateDoc(
+      doc(db, `users/${auth.currentUser.uid}/subscriptions/${sub.id}`),
+      { renewalAlertCreated: true }
+    )
+  }
+})
+}
+
+const loadSubscriptions = async () => {
+  const user = auth.currentUser
+  if (!user) return
+
+  subscriptions.value = await getSubscriptions(user.uid)
+}
+
+const formatSeverity = (alert) => {
+  if (alert.type === "renewal") return "Renewal Soon"
+  if (alert.type === "budget") return "Budget Alert"
+  return alert.severity
+}
+
+onMounted(async () => {
+  await loadSubscriptions()
+  await checkRenewals()
+  await loadAlerts()
+})
 </script>
+
 
 <style scoped>
 .alerts {
@@ -143,6 +368,34 @@ onMounted(loadAlerts)
 .header-actions {
   display: flex;
   gap: 12px;
+}
+
+.read-alert {
+  opacity: 0.6;
+  border-left-color: #d1d5db;
+}
+
+.insight-card {
+  background: #f4f6ff;
+}
+
+.insight-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.insight-link {
+  display: inline-block;
+  margin-top: 10px;
+  color: #4f46e5;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.insight-link:hover {
+  text-decoration: underline;
 }
 
 .btn-secondary {
@@ -234,11 +487,27 @@ onMounted(loadAlerts)
 }
 
 .alert-severity {
+  display: inline-block;
   font-size: 0.75rem;
-  padding: 4px 8px;
-  border-radius: 8px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 999px;
+  text-transform: capitalize;
+}
+
+.alert-severity.warning {
   background: #fff3cd;
   color: #856404;
+}
+
+.alert-severity.critical {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.alert-severity.info {
+  background: #e0f2fe;
+  color: #075985;
 }
 
 .alert-actions {
@@ -274,5 +543,27 @@ onMounted(loadAlerts)
   background: #f5f6fa;
   border-radius: 12px;
   color: #6b7080;
+}
+
+.pref-section {
+  border-top: 1px solid #eee;
+  padding: 10px 0;
+}
+
+.pref-header {
+  display: flex;
+  justify-content: space-between;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.pref-body {
+  margin-top: 10px;
+}
+
+.pref-body input[type="number"] {
+  width: 100%;
+  padding: 6px;
+  margin-top: 6px;
 }
 </style>
