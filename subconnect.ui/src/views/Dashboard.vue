@@ -397,6 +397,10 @@ const AVATAR_COLORS = [
 export default {
   name: 'DashboardView',
 
+  components: {
+    DashboardAlertsPreview  
+  },
+
   data() {
     return {
       // ── Loading / saving state ──

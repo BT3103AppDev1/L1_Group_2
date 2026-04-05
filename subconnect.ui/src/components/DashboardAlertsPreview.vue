@@ -1,6 +1,40 @@
 <template>
   <div>
-    <p style="color:red;">COMPONENT LOADED</p>
+    <div v-if="loading" class="empty-state">
+      Loading alerts...
+    </div>
+
+    <div v-else-if="alerts.length === 0" class="empty-state">
+      You have no active alerts.
+    </div>
+
+    <div v-else class="alerts-preview">
+      <div
+        v-for="alert in alerts"
+        :key="alert.id"
+        class="alert-item"
+      >
+        <div class="alert-row">
+          <p class="alert-title">
+            {{ alert.title }}
+          </p>
+          <span
+            class="severity-badge"
+            :class="alert.severity"
+          >
+            {{ formatSeverity(alert) }}
+          </span>
+        </div>
+
+        <p class="alert-message">
+          {{ alert.message }}
+        </p>
+      </div>
+
+      <router-link to="/alerts" class="view-all-link">
+        View All →
+      </router-link>
+    </div>
   </div>
 </template>
 
@@ -9,22 +43,43 @@ import { ref, onMounted } from "vue"
 import { getAuth } from "firebase/auth"
 import { getAlerts } from "../services/alerts"
 
+// const alerts = ref([])
+// const loading = ref(true)
+// const auth = getAuth()
+
+// const loadAlerts = async () => {
+//   const user = auth.currentUser
+//   if (!user) return
+
+//   const allAlerts = await getAlerts(user.uid)
+
+//   alerts.value = allAlerts
+//     .filter(alert => !alert.read)
+//     .slice(0, 3)
+
+//   loading.value = false
+// }
+
 const alerts = ref([])
 const loading = ref(true)
 const auth = getAuth()
 
-const loadAlerts = async () => {
-  const user = auth.currentUser
-  if (!user) return
-
-  const allAlerts = await getAlerts(user.uid)
-
-  alerts.value = allAlerts
-    .filter(alert => !alert.read)
-    .slice(0, 3)
-
+const loadAlerts = async (uid) => {
+  const allAlerts = await getAlerts(uid)
+  alerts.value = allAlerts.filter(a => !a.read).slice(0, 3)
   loading.value = false
 }
+
+onMounted(() => {
+  onAuthStateChanged(auth, async (user) => {
+    if (!user) {
+      loading.value = false
+      return
+    }
+
+    await loadAlerts(user.uid)
+  })
+})
 
 const formatSeverity = (alert) => {
   if (alert.type === "renewal") return "Renewal Soon"
