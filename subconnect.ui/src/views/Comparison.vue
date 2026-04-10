@@ -23,9 +23,9 @@
       </div>
 
       <div class="summary-card">
-        <p class="card-label">Market Adjustment</p>
-        <p class="card-value">+ ${{ inflation }}</p>
-        <p class="card-sub">Estimated price increase</p>
+        <p class="card-label">Savings vs Market Average</p>
+        <p class="card-value" :class ="averageDifference > 0 ? 'price-bad' : 'price-good'" > {{ averageDifference > 0 ? '+' : '-'}}${{ Math.abs(averageDifference).toFixed(2) }}</p>
+        <p class="card-sub">Difference from market pricing</p>
       </div>
     </div>
 
@@ -76,7 +76,6 @@
               <th>Current Cost</th>
               <th>Benchmark</th>
               <th>Score</th>
-              <th></th>
             </tr>
           </thead>
 
@@ -112,26 +111,6 @@
                   {{ item.status }}
                 </span>
               </td>
-
-              <!-- Actions -->
-              <td class="actions-cell">
-                <button
-                  v-if="item.status === 'poor'"
-                  class="row-action-btn"
-                  @click="suggestSwitch(item)"
-                >
-                  Switch
-                </button>
-
-                <button
-                  v-else-if="item.status === 'fair'"
-                  class="row-action-btn"
-                >
-                  Monitor
-                </button>
-
-                <button v-else class="row-action-btn">Keep</button>
-              </td>
             </tr>
           </tbody>
         </table>
@@ -152,7 +131,6 @@ export default {
   data() {
     return {
       comparisons: [],
-      inflation: 8.5,
       uid: null,
     };
   },
@@ -168,12 +146,23 @@ export default {
     },
 
     score() {
-      if (this.comparisons.length === 0) return 0;
+      if (this.comparisons.length === 0) { return 0; }
       const good = this.comparisons.filter(
         (i) => i.status === 'excellent',
       ).length;
       return Math.round((good / this.comparisons.length) * 100);
     },
+
+    averageDifference() {
+      if (this.comparisons.length === 0) {
+        return 0;
+      }
+
+      const total = this.comparisons.reduce((sum, item) => {
+        return sum + (item.userPrice - item.benchmarkPrice);
+      }, 0);
+      return total / this.comparisons.length;
+    }
   },
 
   mounted() {
@@ -304,6 +293,14 @@ export default {
 .card-value {
   font-size: 1.75rem;
   font-weight: 800;
+}
+
+.price-good {
+  color: #16a34a;
+}
+
+.price-bad {
+  color: #dc2626;
 }
 
 /* ── Chart ── */
@@ -476,25 +473,6 @@ export default {
 .status-badge--poor {
   background: #fef2f2;
   color: #dc2626;
-}
-
-/* actions */
-.actions-cell {
-  display: flex;
-  gap: 6px;
-}
-
-.row-action-btn {
-  padding: 6px 10px;
-  border-radius: 6px;
-  border: none;
-  background: #f4f4f8;
-  cursor: pointer;
-  font-size: 0.75rem;
-}
-
-.row-action-btn:hover {
-  background: #e8e8f0;
 }
 
 </style>
