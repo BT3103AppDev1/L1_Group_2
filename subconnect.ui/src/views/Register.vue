@@ -43,9 +43,21 @@
             </svg>
           </button>
         </div>
+        
+        <div v-if="password" class="strength-meter">
+          <div class="strength-bar-bg">
+            <div 
+              class="strength-bar-fill" 
+              :style="{ width: `${(passwordScore / 4) * 100}%`, backgroundColor: strengthColor }"
+            ></div>
+          </div>
+          <div class="strength-label" :style="{ color: strengthColor }">
+            {{ strengthText }}
+          </div>
+        </div>
       </div>
 
-      <button type="submit" class="signup-btn">Sign Up</button>
+      <button type="submit" class="signup-btn" :disabled="passwordScore < 3">Sign Up</button>
 
       <p v-if="errorMessage" class="error-msg">{{ errorMessage }}</p>
     </form>
@@ -58,7 +70,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { registerUser } from '../services/auth.js';
 
@@ -68,7 +80,50 @@ const showPassword = ref(false);
 const errorMessage = ref('');
 const router = useRouter();
 
+// NEW: Password Strength Logic
+const passwordScore = computed(() => {
+  if (!password.value) return 0;
+  let score = 0;
+  
+  // Criteria 1: At least 8 characters
+  if (password.value.length >= 8) score += 1;
+  // Criteria 2: Contains an uppercase letter
+  if (/[A-Z]/.test(password.value)) score += 1;
+  // Criteria 3: Contains a number
+  if (/[0-9]/.test(password.value)) score += 1;
+  // Criteria 4: Contains a special character
+  if (/[^A-Za-z0-9]/.test(password.value)) score += 1;
+  
+  return score;
+});
+
+const strengthText = computed(() => {
+  switch (passwordScore.value) {
+    case 1: return 'Weak (Add numbers & special characters)';
+    case 2: return 'Fair (Getting better)';
+    case 3: return 'Good (Almost there)';
+    case 4: return 'Strong (Excellent)';
+    default: return 'Enter a password';
+  }
+});
+
+const strengthColor = computed(() => {
+  switch (passwordScore.value) {
+    case 1: return '#dc3545'; // Red
+    case 2: return '#ffc107'; // Yellow
+    case 3: return '#17a2b8'; // Blue
+    case 4: return '#28a745'; // Green
+    default: return '#e9ecef'; // Gray
+  }
+});
+
 const handleRegister = async () => {
+  // Extra safety check before sending to Firebase
+  if (passwordScore.value < 3) {
+    errorMessage.value = 'Please create a stronger password before signing up.';
+    return;
+  }
+
   try {
     errorMessage.value = '';
     console.log('Attempting to register...');
@@ -79,7 +134,7 @@ const handleRegister = async () => {
   } catch (error) {
     console.error(error);
     errorMessage.value =
-      'Error creating account. Password must be at least 6 characters, or email is already in use.';
+      'Error creating account. Email may already be in use.';
   }
 };
 </script>
@@ -165,6 +220,33 @@ input {
   color: #1a1a2e;
 }
 
+/* NEW: Password Strength Meter Styles */
+.strength-meter {
+  margin-top: 0.75rem;
+}
+
+.strength-bar-bg {
+  height: 6px;
+  width: 100%;
+  background-color: #e9ecef;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.strength-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.3s ease, background-color 0.3s ease;
+}
+
+.strength-label {
+  margin-top: 0.4rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-align: right;
+  transition: color 0.3s ease;
+}
+
 .signup-btn {
   width: 100%;
   padding: 0.75rem;
@@ -174,10 +256,17 @@ input {
   border-radius: 4px;
   cursor: pointer;
   font-weight: bold;
+  transition: background-color 0.2s, opacity 0.2s;
 }
 
-.signup-btn:hover {
+.signup-btn:hover:not(:disabled) {
   background-color: #218838;
+}
+
+.signup-btn:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+  opacity: 0.7;
 }
 
 .error-msg {
