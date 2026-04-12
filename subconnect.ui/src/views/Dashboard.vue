@@ -97,35 +97,80 @@
       <!-- ── Chart + Alerts row ─────────────────────────────────── -->
       <div class="middle-row">
 
-        <!-- Spending Trend Chart -->
-        <div class="chart-card">
-        <div class="chart-header">
-          <div>
-            <h2 class="chart-title">Spending Trend</h2>
-            <p class="chart-sub">Monthly subscription expenditure over time.</p>
-          </div>
-          <span v-if="hasChartData" class="chart-range-badge">
-            {{ chartRangeLabel }}
-          </span>
-        </div>
+        <!-- Left column: Spending Trend + Pie Charts -->
+        <div class="left-col">
 
-        <div v-if="!hasChartData" class="chart-empty">
-          <p>No spending history yet. Add a subscription to get started.</p>
-        </div>
-        <div v-else class="chart-wrapper">
-          <line-chart
-            :data="chartData"
-            :colors="['#6c47ff']"
-            :curve="true"
-            :area="true"
-            :legend="false"
-            :ytitle="'Amount ($)'"
-            prefix="$"
-            height="280px"
-            :library="chartLibraryOptions"
-          />
-        </div>
-      </div>
+          <!-- Spending Trend Chart -->
+          <div class="chart-card">
+            <div class="chart-header">
+              <div>
+                <h2 class="chart-title">Spending Trend</h2>
+              </div>
+              <span v-if="hasChartData" class="chart-range-badge">
+                {{ chartRangeLabel }}
+              </span>
+            </div>
+
+            <div v-if="!hasChartData" class="chart-empty">
+              <p>No spending history yet. Add a subscription to get started.</p>
+            </div>
+            <div v-else class="chart-wrapper">
+              <line-chart
+                :data="chartData"
+                :colors="['#6c47ff']"
+                :curve="true"
+                :area="true"
+                :legend="false"
+                :ytitle="'Amount ($)'"
+                prefix="$"
+                height="280px"
+                :library="chartLibraryOptions"
+              />
+            </div>
+          </div>
+
+          <!-- Pie Charts Row -->
+          <div class="pie-row">
+
+            <!-- Pie 1: Spend by Category -->
+            <div class="pie-card">
+              <h2 class="chart-title">Spend by Category</h2>
+              <div v-if="!hasCategoryData" class="chart-empty">
+                <p>No active subscriptions yet.</p>
+              </div>
+              <div v-else class="pie-wrapper">
+                <pie-chart
+                  :data="categoryChartData"
+                  :colors="pieColors"
+                  prefix="$"
+                  height="220px"
+                  :legend="false"
+                  :library="pieChartOptions"
+                />
+              </div>
+            </div>
+
+            <!-- Pie 2: Top Subscriptions -->
+            <div class="pie-card">
+              <h2 class="chart-title">Top Subscriptions</h2>
+              <div v-if="!hasTopSubsData" class="chart-empty">
+                <p>No active subscriptions yet.</p>
+              </div>
+              <div v-else class="pie-wrapper">
+                <pie-chart
+                  :data="topSubsChartData"
+                  :colors="pieColors"
+                  prefix="$"
+                  height="220px"
+                  :legend="false"
+                  :library="pieChartOptions"
+                />
+              </div>
+            </div>
+
+          </div>
+
+        </div> <!-- end left-col -->
 
         <!-- Active Alerts panel -->
         <div class="alerts-card">
@@ -517,8 +562,9 @@
 </template>
 
 <script>
-import { auth } from '@/firebase'
+import { auth, db } from '@/firebase'
 import { onAuthStateChanged } from 'firebase/auth'
+import { updateDoc, doc } from 'firebase/firestore'
 import {
   getSubscriptions,
   addSubscription,
@@ -586,6 +632,13 @@ export default {
       ],
 
       mockAlerts: [],
+
+      // ── Pie chart colors ──
+      pieColors: [
+        '#6c47ff', '#3b82f6', '#10b981', '#f59e0b',
+        '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899',
+        '#f97316', '#84cc16',
+      ],
 
       // ── Pagination ──
       currentPage: 1,
@@ -765,6 +818,69 @@ export default {
       }
     },
 
+    // ── Pie chart data ────────────────────────────────────────────────────
+
+    // Monthly spend grouped by category (Active subs only)
+    categoryChartData() {
+      const map = {}
+      this.subscriptions
+        .filter((s) => s.status === 'Active')
+        .forEach((s) => {
+          const cat = s.category || 'Other'
+          map[cat] = parseFloat(((map[cat] || 0) + toMonthlyCost(s)).toFixed(2))
+        })
+      return map
+    },
+
+    hasCategoryData() {
+      return Object.keys(this.categoryChartData).length > 0
+    },
+
+    // Top 5 subscriptions by monthly cost; remainder grouped as "Others" (Active only)
+    topSubsChartData() {
+      const active = this.subscriptions
+        .filter((s) => s.status === 'Active')
+        .map((s) => ({ name: s.serviceName, cost: toMonthlyCost(s) }))
+        .sort((a, b) => b.cost - a.cost)
+
+      if (active.length === 0) return {}
+
+      const top = active.slice(0, 5)
+      const rest = active.slice(5)
+
+      // Build top-5 first, then Others last — Chart.js renders slices in
+      // insertion order, so Others will always occupy the same final position.
+      const data = {}
+      top.forEach((s) => { data[s.name] = parseFloat(s.cost.toFixed(2)) })
+      if (rest.length > 0) {
+        data['Others'] = parseFloat(rest.reduce((sum, s) => sum + s.cost, 0).toFixed(2))
+      }
+      return data
+    },
+
+    hasTopSubsData() {
+      return Object.keys(this.topSubsChartData).length > 0
+    },
+
+    pieChartOptions() {
+      return {
+        // Leave room around the pie for outside labels + connector lines
+        layout: { padding: 50 },
+        plugins: {
+          pieOutsideLabels: { enabled: true },
+          tooltip: {
+            callbacks: {
+              label(ctx) {
+                return ` ${ctx.label}: $${(ctx.parsed || 0).toFixed(2)}`
+              },
+            },
+          },
+        },
+      }
+    },
+
+    // ── Warn if a subscription with the same name already exists ──────────
+
     // Warn if a subscription with the same name already exists
     duplicateWarning() {
       if (!this.form.serviceName) return false
@@ -806,6 +922,7 @@ export default {
         ])
         this.subscriptions = subs
         this.budgetCap = budget
+        await this.updateStaleNextBillingDates()
       } catch (err) {
         console.error('Failed to load dashboard data:', err)
       } finally {
@@ -857,15 +974,66 @@ export default {
 
     // ── Helper Functions ──────────────────────────────────────────────────
 
-    autoSetNextBillingDate() {
-      const d = new Date(this.form.startDate)
-      if (isNaN(d)) return
-      if (this.form.billingCycle === 'Annually') {
+    // Advance a date by one billing cycle interval
+    addOneCycle(date, billingCycle) {
+      const d = new Date(date)
+      if (billingCycle === 'Annually') {
         d.setFullYear(d.getFullYear() + 1)
       } else {
         d.setMonth(d.getMonth() + 1)
       }
-      this.form.nextBillingDate = d.toISOString().slice(0, 10)
+      return d
+    },
+
+    // Returns the next billing date AFTER today, anchored to the start date
+    calcNextBillingDate(startDateStr, billingCycle) {
+      const start = new Date(startDateStr)
+      if (isNaN(start)) return null
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      let next = new Date(start)
+      next.setHours(0, 0, 0, 0)
+      while (next <= today) {
+        next = this.addOneCycle(next, billingCycle)
+      }
+      return next.toISOString().slice(0, 10)
+    },
+
+    autoSetNextBillingDate() {
+      if (!this.form.startDate) return
+      const next = this.calcNextBillingDate(this.form.startDate, this.form.billingCycle)
+      if (next) this.form.nextBillingDate = next
+    },
+
+    // Silently fix stale nextBillingDate for Active subscriptions on load
+    async updateStaleNextBillingDates() {
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+
+      for (const sub of this.subscriptions) {
+        if (sub.status !== 'Active') continue
+        if (!sub.nextBillingDate) continue
+
+        const nextDate = new Date(sub.nextBillingDate)
+        if (isNaN(nextDate) || nextDate > today) continue
+
+        // Use startDate as anchor so the day-of-month stays consistent
+        const anchor = sub.startDate || sub.nextBillingDate
+        const corrected = this.calcNextBillingDate(anchor, sub.billingCycle || 'Monthly')
+        if (!corrected) continue
+
+        // Write directly to Firestore — skip updateSubscription to avoid budget alert spam
+        await updateDoc(
+          doc(db, 'users', this.uid, 'subscriptions', sub.id),
+          { nextBillingDate: corrected }
+        )
+
+        // Update local state
+        const idx = this.subscriptions.findIndex((s) => s.id === sub.id)
+        if (idx !== -1) {
+          this.subscriptions[idx] = { ...this.subscriptions[idx], nextBillingDate: corrected }
+        }
+      }
     },
 
     // Expose toMonthlyCost to the template
@@ -1260,6 +1428,32 @@ export default {
   align-items: stretch;
 }
 
+.left-col {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+}
+
+.pie-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.pie-card {
+  background: #fff;
+  border: 1px solid #e8e8f0;
+  border-radius: 14px;
+  padding: 24px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  min-width: 0;
+}
+
+.pie-wrapper {
+  margin-top: 16px;
+}
+
 /* Chart card */
 .chart-card {
   background: #fff;
@@ -1352,9 +1546,6 @@ export default {
 
 .alerts-empty {
   flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   color: #9ca3af;
   font-size: 0.88rem;
 }
