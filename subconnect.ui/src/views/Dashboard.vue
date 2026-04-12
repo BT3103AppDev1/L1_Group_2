@@ -177,10 +177,10 @@
 
       </div> <!-- end middle-row -->
 
-      <!-- ── Top Subscriptions table ────────────────────────────── -->
+      <!-- ── Your Subscriptions table ─────────────────────────── -->
       <div class="table-section">
         <div class="table-header">
-          <h2 class="table-title">Top Subscriptions</h2>
+          <h2 class="table-title">Your Subscriptions</h2>
           <button class="manage-all-btn">
             Manage All
             <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" width="14" height="14">
@@ -208,7 +208,7 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-for="sub in topSubscriptions" :key="sub.id" class="sub-row">
+              <tr v-for="sub in pagedSubscriptions" :key="sub.id" class="sub-row">
                 <td class="sub-service-cell">
                   <div class="service-avatar" :style="{ background: getAvatarColor(sub.serviceName) }">
                     {{ sub.serviceName.charAt(0).toUpperCase() }}
@@ -241,6 +241,30 @@
             </tbody>
           </table>
         </div>
+
+        <!-- ── Pagination ── -->
+        <div v-if="totalPages > 1" class="pagination">
+          <button
+            class="page-btn"
+            :disabled="currentPage === 1"
+            @click="goToPage(currentPage - 1)"
+          >&lt;</button>
+
+          <button
+            v-for="page in pageNumbers"
+            :key="page"
+            class="page-btn"
+            :class="{ 'page-btn--active': page === currentPage }"
+            @click="goToPage(page)"
+          >{{ page }}</button>
+
+          <button
+            class="page-btn"
+            :disabled="currentPage === totalPages"
+            @click="goToPage(currentPage + 1)"
+          >&gt;</button>
+        </div>
+
       </div>
 
       </template> <!-- end v-else (has subscriptions) -->
@@ -445,6 +469,10 @@ export default {
       ],
 
       mockAlerts: [],
+
+      // ── Pagination ──
+      currentPage: 1,
+      pageSize: 5,
     }
   },
 
@@ -476,11 +504,18 @@ export default {
       }).length
     },
 
-    // Top 5 subscriptions by monthly cost for the table
-    topSubscriptions() {
-      return [...this.subscriptions]
-        .sort((a, b) => toMonthlyCost(b) - toMonthlyCost(a))
-        .slice(0, 5)
+    // Paginated subscriptions for the table (5 per page, newest first)
+    pagedSubscriptions() {
+      const start = (this.currentPage - 1) * this.pageSize
+      return this.subscriptions.slice(start, start + this.pageSize)
+    },
+
+    totalPages() {
+      return Math.ceil(this.subscriptions.length / this.pageSize)
+    },
+
+    pageNumbers() {
+      return Array.from({ length: this.totalPages }, (_, i) => i + 1)
     },
 
     // Chart data: always show the last 12 months
@@ -584,6 +619,13 @@ export default {
   },
 
   methods: {
+    // ── Pagination ────────────────────────────────────────────────────────
+
+    goToPage(page) {
+      if (page < 1 || page > this.totalPages) return
+      this.currentPage = page
+    },
+
     // ── Helper Functions ──────────────────────────────────────────────────
 
     autoSetNextBillingDate() {
@@ -733,6 +775,7 @@ export default {
         } else {
           const newId = await addSubscription(uid, payload)
           this.subscriptions.unshift({ id: newId, ...payload, createdAt: { toDate: () => new Date() } })
+          this.currentPage = 1
         }
         this.closeModal()
       } catch (err) {
@@ -751,6 +794,7 @@ export default {
         await deleteSubscription(uid, this.deleteTarget.id)
         this.subscriptions = this.subscriptions.filter((s) => s.id !== this.deleteTarget.id)
         this.deleteTarget = null
+        if (this.currentPage > this.totalPages) this.currentPage = Math.max(1, this.totalPages)
       } catch (err) {
         console.error('Delete failed:', err)
       } finally {
@@ -1391,5 +1435,49 @@ export default {
   .summary-grid { grid-template-columns: 1fr; }
   .form-grid { grid-template-columns: 1fr; }
   .form-group--full { grid-column: span 1; }
+}
+/* ── Pagination ── */
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 16px 0 8px;
+  border-top: 1px solid #f0f0f5;
+}
+
+.page-btn {
+  min-width: 34px;
+  height: 34px;
+  padding: 0 10px;
+  border: 1px solid #e2e4ea;
+  border-radius: 8px;
+  background: white;
+  color: #1a1a2e;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.page-btn:hover:not(:disabled) {
+  background: #f4f4f8;
+  border-color: #c9cadb;
+}
+
+.page-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.page-btn--active {
+  background: #6c47ff;
+  border-color: #6c47ff;
+  color: white;
+}
+
+.page-btn--active:hover {
+  background: #5a3bc2;
+  border-color: #5a3bc2;
 }
 </style>
