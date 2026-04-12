@@ -97,35 +97,80 @@
       <!-- ── Chart + Alerts row ─────────────────────────────────── -->
       <div class="middle-row">
 
-        <!-- Spending Trend Chart -->
-        <div class="chart-card">
-        <div class="chart-header">
-          <div>
-            <h2 class="chart-title">Spending Trend</h2>
-            <p class="chart-sub">Monthly subscription expenditure over time.</p>
-          </div>
-          <span v-if="hasChartData" class="chart-range-badge">
-            {{ chartRangeLabel }}
-          </span>
-        </div>
+        <!-- Left column: Spending Trend + Pie Charts -->
+        <div class="left-col">
 
-        <div v-if="!hasChartData" class="chart-empty">
-          <p>No spending history yet. Add a subscription to get started.</p>
-        </div>
-        <div v-else class="chart-wrapper">
-          <line-chart
-            :data="chartData"
-            :colors="['#6c47ff']"
-            :curve="true"
-            :area="true"
-            :legend="false"
-            :ytitle="'Amount ($)'"
-            prefix="$"
-            height="280px"
-            :library="chartLibraryOptions"
-          />
-        </div>
-      </div>
+          <!-- Spending Trend Chart -->
+          <div class="chart-card">
+            <div class="chart-header">
+              <div>
+                <h2 class="chart-title">Spending Trend</h2>
+              </div>
+              <span v-if="hasChartData" class="chart-range-badge">
+                {{ chartRangeLabel }}
+              </span>
+            </div>
+
+            <div v-if="!hasChartData" class="chart-empty">
+              <p>No spending history yet. Add a subscription to get started.</p>
+            </div>
+            <div v-else class="chart-wrapper">
+              <line-chart
+                :data="chartData"
+                :colors="['#6c47ff']"
+                :curve="true"
+                :area="true"
+                :legend="false"
+                :ytitle="'Amount ($)'"
+                prefix="$"
+                height="280px"
+                :library="chartLibraryOptions"
+              />
+            </div>
+          </div>
+
+          <!-- Pie Charts Row -->
+          <div class="pie-row">
+
+            <!-- Pie 1: Spend by Category -->
+            <div class="pie-card">
+              <h2 class="chart-title">Spend by Category</h2>
+              <div v-if="!hasCategoryData" class="chart-empty">
+                <p>No active subscriptions yet.</p>
+              </div>
+              <div v-else class="pie-wrapper">
+                <pie-chart
+                  :data="categoryChartData"
+                  :colors="pieColors"
+                  prefix="$"
+                  height="220px"
+                  :legend="false"
+                  :library="pieChartOptions"
+                />
+              </div>
+            </div>
+
+            <!-- Pie 2: Top Subscriptions -->
+            <div class="pie-card">
+              <h2 class="chart-title">Top Subscriptions</h2>
+              <div v-if="!hasTopSubsData" class="chart-empty">
+                <p>No active subscriptions yet.</p>
+              </div>
+              <div v-else class="pie-wrapper">
+                <pie-chart
+                  :data="topSubsChartData"
+                  :colors="pieColors"
+                  prefix="$"
+                  height="220px"
+                  :legend="false"
+                  :library="pieChartOptions"
+                />
+              </div>
+            </div>
+
+          </div>
+
+        </div> <!-- end left-col -->
 
         <!-- Active Alerts panel -->
         <div class="alerts-card">
@@ -181,12 +226,92 @@
       <div class="table-section">
         <div class="table-header">
           <h2 class="table-title">Your Subscriptions</h2>
-          <button class="manage-all-btn">
-            Manage All
-            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" width="14" height="14">
-              <polyline points="7,4 13,10 7,16"/>
-            </svg>
-          </button>
+
+          <div class="table-header-actions">
+            <!-- Filter button + dropdown -->
+            <div class="filter-wrapper" ref="filterWrapper">
+              <button class="manage-all-btn" @click.stop="showFilterDropdown = !showFilterDropdown">
+                <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" width="14" height="14">
+                  <line x1="3" y1="5" x2="17" y2="5"/>
+                  <line x1="6" y1="10" x2="14" y2="10"/>
+                  <line x1="9" y1="15" x2="11" y2="15"/>
+                </svg>
+                Filter
+                <span v-if="activeFilterCount" class="filter-badge">{{ activeFilterCount }}</span>
+              </button>
+
+              <div v-if="showFilterDropdown" class="filter-dropdown">
+
+                <!-- Category -->
+                <div class="filter-section">
+                  <p class="filter-label">Category</p>
+                  <label
+                    v-for="cat in availableCategories"
+                    :key="cat"
+                    class="filter-option"
+                  >
+                    <input
+                      type="checkbox"
+                      :checked="filters.category.includes(cat)"
+                      @change="toggleFilterValue('category', cat)"
+                    />
+                    {{ cat }}
+                  </label>
+                </div>
+
+                <!-- Status -->
+                <div class="filter-section">
+                  <p class="filter-label">Status</p>
+                  <label
+                    v-for="s in ['Active', 'Paused', 'Cancelled']"
+                    :key="s"
+                    class="filter-option"
+                  >
+                    <input
+                      type="checkbox"
+                      :checked="filters.status.includes(s)"
+                      @change="toggleFilterValue('status', s)"
+                    />
+                    {{ s }}
+                  </label>
+                </div>
+
+                <!-- Billing Cycle -->
+                <div class="filter-section">
+                  <p class="filter-label">Billing Cycle</p>
+                  <label
+                    v-for="c in ['Monthly', 'Annually']"
+                    :key="c"
+                    class="filter-option"
+                  >
+                    <input
+                      type="checkbox"
+                      :checked="filters.billingCycle.includes(c)"
+                      @change="toggleFilterValue('billingCycle', c)"
+                    />
+                    {{ c }}
+                  </label>
+                </div>
+
+                <button
+                  v-if="activeFilterCount"
+                  class="clear-filters-btn"
+                  @click="clearFilters"
+                >
+                  Clear all filters
+                </button>
+              </div>
+            </div>
+
+            <div class="btn-divider"></div>
+
+            <button class="manage-all-btn">
+              Manage All
+              <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" width="14" height="14">
+                <polyline points="7,4 13,10 7,16"/>
+              </svg>
+            </button>
+          </div>
         </div>
 
         <!-- Empty state -->
@@ -197,13 +322,46 @@
 
         <div v-else class="table-wrapper">
           <table class="sub-table">
+            <colgroup>
+              <col style="width: 36%" /> <!-- Service -->
+              <col style="width: 15%" /> <!-- Category -->
+              <col style="width: 14%" /> <!-- Monthly Cost -->
+              <col style="width: 12%" /> <!-- Next Billing -->
+              <col style="width: 10%" /> <!-- Status -->
+              <col style="width: 7%"  /> <!-- Actions -->
+            </colgroup>
             <thead>
               <tr>
-                <th>Service</th>
-                <th>Category</th>
-                <th>Monthly Cost</th>
-                <th>Next Billing</th>
-                <th>Status</th>
+                <th class="sortable-th" @click="toggleSort('serviceName')">
+                  Service
+                  <span v-if="sortKey === 'serviceName'" class="sort-arrow">
+                    {{ sortDir === 'asc' ? '▲' : '▼' }}
+                  </span>
+                </th>
+                <th class="sortable-th" @click="toggleSort('category')">
+                  Category
+                  <span v-if="sortKey === 'category'" class="sort-arrow">
+                    {{ sortDir === 'asc' ? '▲' : '▼' }}
+                  </span>
+                </th>
+                <th class="sortable-th" @click="toggleSort('monthlyCost')">
+                  Monthly Cost
+                  <span v-if="sortKey === 'monthlyCost'" class="sort-arrow">
+                    {{ sortDir === 'asc' ? '▲' : '▼' }}
+                  </span>
+                </th>
+                <th class="sortable-th" @click="toggleSort('nextBillingDate')">
+                  Next Billing
+                  <span v-if="sortKey === 'nextBillingDate'" class="sort-arrow">
+                    {{ sortDir === 'asc' ? '▲' : '▼' }}
+                  </span>
+                </th>
+                <th class="sortable-th" @click="toggleSort('status')">
+                  Status
+                  <span v-if="sortKey === 'status'" class="sort-arrow">
+                    {{ sortDir === 'asc' ? '▲' : '▼' }}
+                  </span>
+                </th>
                 <th></th>
               </tr>
             </thead>
@@ -238,12 +396,16 @@
                   </button>
                 </td>
               </tr>
+              <!-- Placeholder rows to keep table height consistent -->
+              <tr v-for="i in emptyRowCount" :key="'empty-' + i" class="sub-row sub-row--placeholder">
+                <td colspan="6"></td>
+              </tr>
             </tbody>
           </table>
         </div>
 
         <!-- ── Pagination ── -->
-        <div v-if="totalPages > 1" class="pagination">
+        <div class="pagination">
           <button
             class="page-btn"
             :disabled="currentPage === 1"
@@ -400,8 +562,9 @@
 </template>
 
 <script>
-import { auth } from '@/firebase'
+import { auth, db } from '@/firebase'
 import { onAuthStateChanged } from 'firebase/auth'
+import { updateDoc, doc } from 'firebase/firestore'
 import {
   getSubscriptions,
   addSubscription,
@@ -470,9 +633,28 @@ export default {
 
       mockAlerts: [],
 
+      // ── Pie chart colors ──
+      pieColors: [
+        '#6c47ff', '#3b82f6', '#10b981', '#f59e0b',
+        '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899',
+        '#f97316', '#84cc16',
+      ],
+
       // ── Pagination ──
       currentPage: 1,
       pageSize: 5,
+
+      // ── Sort ──
+      sortKey: 'monthlyCost',
+      sortDir: 'desc',
+
+      // ── Filter ──
+      showFilterDropdown: false,
+      filters: {
+        category: [],
+        status: [],
+        billingCycle: [],
+      },
     }
   },
 
@@ -504,18 +686,79 @@ export default {
       }).length
     },
 
-    // Paginated subscriptions for the table (5 per page, newest first)
+    // Categories that actually exist in the user's subscriptions
+    availableCategories() {
+      const cats = new Set(this.subscriptions.map((s) => s.category || 'Other'))
+      return [...cats].sort()
+    },
+
+    // Number of active filters (for the badge on the filter button)
+    activeFilterCount() {
+      return (
+        this.filters.category.length +
+        this.filters.status.length +
+        this.filters.billingCycle.length
+      )
+    },
+
+    // Apply filters then sort
+    filteredAndSorted() {
+      let result = [...this.subscriptions]
+
+      if (this.filters.category.length) {
+        result = result.filter((s) =>
+          this.filters.category.includes(s.category || 'Other')
+        )
+      }
+      if (this.filters.status.length) {
+        result = result.filter((s) =>
+          this.filters.status.includes(s.status || 'Active')
+        )
+      }
+      if (this.filters.billingCycle.length) {
+        result = result.filter((s) =>
+          this.filters.billingCycle.includes(s.billingCycle || 'Monthly')
+        )
+      }
+
+      result.sort((a, b) => {
+        let valA, valB
+        if (this.sortKey === 'monthlyCost') {
+          valA = toMonthlyCost(a)
+          valB = toMonthlyCost(b)
+        } else if (this.sortKey === 'nextBillingDate') {
+          valA = a.nextBillingDate ? new Date(a.nextBillingDate) : new Date(0)
+          valB = b.nextBillingDate ? new Date(b.nextBillingDate) : new Date(0)
+        } else {
+          valA = (a[this.sortKey] || '').toLowerCase()
+          valB = (b[this.sortKey] || '').toLowerCase()
+        }
+        if (valA < valB) return this.sortDir === 'asc' ? -1 : 1
+        if (valA > valB) return this.sortDir === 'asc' ? 1 : -1
+        return 0
+      })
+
+      return result
+    },
+
+    // Paginated slice of filteredAndSorted
     pagedSubscriptions() {
       const start = (this.currentPage - 1) * this.pageSize
-      return this.subscriptions.slice(start, start + this.pageSize)
+      return this.filteredAndSorted.slice(start, start + this.pageSize)
     },
 
     totalPages() {
-      return Math.ceil(this.subscriptions.length / this.pageSize)
+      return Math.ceil(this.filteredAndSorted.length / this.pageSize)
     },
 
     pageNumbers() {
       return Array.from({ length: this.totalPages }, (_, i) => i + 1)
+    },
+
+    // How many blank rows to add to fill up to pageSize
+    emptyRowCount() {
+      const shown = this.pagedSubscriptions.length
+      return shown < this.pageSize ? this.pageSize - shown : 0
     },
 
     // Chart data: always show the last 12 months
@@ -575,6 +818,69 @@ export default {
       }
     },
 
+    // ── Pie chart data ────────────────────────────────────────────────────
+
+    // Monthly spend grouped by category (Active subs only)
+    categoryChartData() {
+      const map = {}
+      this.subscriptions
+        .filter((s) => s.status === 'Active')
+        .forEach((s) => {
+          const cat = s.category || 'Other'
+          map[cat] = parseFloat(((map[cat] || 0) + toMonthlyCost(s)).toFixed(2))
+        })
+      return map
+    },
+
+    hasCategoryData() {
+      return Object.keys(this.categoryChartData).length > 0
+    },
+
+    // Top 5 subscriptions by monthly cost; remainder grouped as "Others" (Active only)
+    topSubsChartData() {
+      const active = this.subscriptions
+        .filter((s) => s.status === 'Active')
+        .map((s) => ({ name: s.serviceName, cost: toMonthlyCost(s) }))
+        .sort((a, b) => b.cost - a.cost)
+
+      if (active.length === 0) return {}
+
+      const top = active.slice(0, 5)
+      const rest = active.slice(5)
+
+      // Build top-5 first, then Others last — Chart.js renders slices in
+      // insertion order, so Others will always occupy the same final position.
+      const data = {}
+      top.forEach((s) => { data[s.name] = parseFloat(s.cost.toFixed(2)) })
+      if (rest.length > 0) {
+        data['Others'] = parseFloat(rest.reduce((sum, s) => sum + s.cost, 0).toFixed(2))
+      }
+      return data
+    },
+
+    hasTopSubsData() {
+      return Object.keys(this.topSubsChartData).length > 0
+    },
+
+    pieChartOptions() {
+      return {
+        // Leave room around the pie for outside labels + connector lines
+        layout: { padding: 50 },
+        plugins: {
+          pieOutsideLabels: { enabled: true },
+          tooltip: {
+            callbacks: {
+              label(ctx) {
+                return ` ${ctx.label}: $${(ctx.parsed || 0).toFixed(2)}`
+              },
+            },
+          },
+        },
+      }
+    },
+
+    // ── Warn if a subscription with the same name already exists ──────────
+
     // Warn if a subscription with the same name already exists
     duplicateWarning() {
       if (!this.form.serviceName) return false
@@ -595,7 +901,13 @@ export default {
     },
   },
 
+  beforeUnmount() {
+    document.removeEventListener('click', this.handleFilterOutsideClick)
+  },
+
   mounted() {
+    document.addEventListener('click', this.handleFilterOutsideClick)
+
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       unsubscribe()
       if (!user) {
@@ -610,6 +922,7 @@ export default {
         ])
         this.subscriptions = subs
         this.budgetCap = budget
+        await this.updateStaleNextBillingDates()
       } catch (err) {
         console.error('Failed to load dashboard data:', err)
       } finally {
@@ -626,17 +939,101 @@ export default {
       this.currentPage = page
     },
 
+    // ── Sort ──────────────────────────────────────────────────────────────
+
+    toggleSort(key) {
+      if (this.sortKey === key) {
+        this.sortDir = this.sortDir === 'asc' ? 'desc' : 'asc'
+      } else {
+        this.sortKey = key
+        this.sortDir = key === 'monthlyCost' || key === 'nextBillingDate' ? 'asc' : 'asc'
+      }
+      this.currentPage = 1
+    },
+
+    // ── Filter ────────────────────────────────────────────────────────────
+
+    toggleFilterValue(field, value) {
+      const arr = this.filters[field]
+      const idx = arr.indexOf(value)
+      if (idx === -1) arr.push(value)
+      else arr.splice(idx, 1)
+      this.currentPage = 1
+    },
+
+    clearFilters() {
+      this.filters = { category: [], status: [], billingCycle: [] }
+      this.currentPage = 1
+    },
+
+    handleFilterOutsideClick(e) {
+      if (this.$refs.filterWrapper && !this.$refs.filterWrapper.contains(e.target)) {
+        this.showFilterDropdown = false
+      }
+    },
+
     // ── Helper Functions ──────────────────────────────────────────────────
 
-    autoSetNextBillingDate() {
-      const d = new Date(this.form.startDate)
-      if (isNaN(d)) return
-      if (this.form.billingCycle === 'Annually') {
+    // Advance a date by one billing cycle interval
+    addOneCycle(date, billingCycle) {
+      const d = new Date(date)
+      if (billingCycle === 'Annually') {
         d.setFullYear(d.getFullYear() + 1)
       } else {
         d.setMonth(d.getMonth() + 1)
       }
-      this.form.nextBillingDate = d.toISOString().slice(0, 10)
+      return d
+    },
+
+    // Returns the next billing date AFTER today, anchored to the start date
+    calcNextBillingDate(startDateStr, billingCycle) {
+      const start = new Date(startDateStr)
+      if (isNaN(start)) return null
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      let next = new Date(start)
+      next.setHours(0, 0, 0, 0)
+      while (next <= today) {
+        next = this.addOneCycle(next, billingCycle)
+      }
+      return next.toISOString().slice(0, 10)
+    },
+
+    autoSetNextBillingDate() {
+      if (!this.form.startDate) return
+      const next = this.calcNextBillingDate(this.form.startDate, this.form.billingCycle)
+      if (next) this.form.nextBillingDate = next
+    },
+
+    // Silently fix stale nextBillingDate for Active subscriptions on load
+    async updateStaleNextBillingDates() {
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+
+      for (const sub of this.subscriptions) {
+        if (sub.status !== 'Active') continue
+        if (!sub.nextBillingDate) continue
+
+        const nextDate = new Date(sub.nextBillingDate)
+        if (isNaN(nextDate) || nextDate > today) continue
+
+        // Use startDate as anchor so the day-of-month stays consistent
+        const anchor = sub.startDate || sub.nextBillingDate
+        const corrected = this.calcNextBillingDate(anchor, sub.billingCycle || 'Monthly')
+        if (!corrected) continue
+
+        // Write directly to Firestore — skip updateSubscription to avoid budget alert spam
+        await updateDoc(
+          doc(db, 'users', this.uid, 'subscriptions', sub.id),
+          { nextBillingDate: corrected }
+        )
+
+        // Update local state
+        const idx = this.subscriptions.findIndex((s) => s.id === sub.id)
+        if (idx !== -1) {
+          this.subscriptions[idx] = { ...this.subscriptions[idx], nextBillingDate: corrected }
+        }
+      }
     },
 
     // Expose toMonthlyCost to the template
@@ -1031,6 +1428,32 @@ export default {
   align-items: stretch;
 }
 
+.left-col {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+}
+
+.pie-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.pie-card {
+  background: #fff;
+  border: 1px solid #e8e8f0;
+  border-radius: 14px;
+  padding: 24px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  min-width: 0;
+}
+
+.pie-wrapper {
+  margin-top: 16px;
+}
+
 /* Chart card */
 .chart-card {
   background: #fff;
@@ -1123,9 +1546,6 @@ export default {
 
 .alerts-empty {
   flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   color: #9ca3af;
   font-size: 0.88rem;
 }
@@ -1180,7 +1600,6 @@ export default {
   background: #fff;
   border: 1px solid #e8e8f0;
   border-radius: 14px;
-  overflow: hidden;
   box-shadow: 0 1px 3px rgba(0,0,0,0.04);
 }
 
@@ -1222,11 +1641,16 @@ export default {
   font-size: 0.9rem;
 }
 
-.table-wrapper { overflow-x: auto; }
+.table-wrapper {
+  overflow-x: auto;
+  overflow-y: hidden;
+  border-radius: 0 0 14px 14px;
+}
 
 .sub-table {
   width: 100%;
   border-collapse: collapse;
+  table-layout: fixed;
 }
 
 .sub-table thead tr {
@@ -1247,6 +1671,11 @@ export default {
 .sub-row {
   border-bottom: 1px solid #f9f9fb;
   transition: background 0.1s;
+}
+
+.sub-row--placeholder {
+  height: 53px;
+  pointer-events: none;
 }
 .sub-row:last-child { border-bottom: none; }
 .sub-row:hover { background: #fafafa; }
@@ -1436,6 +1865,121 @@ export default {
   .form-grid { grid-template-columns: 1fr; }
   .form-group--full { grid-column: span 1; }
 }
+/* ── Table header actions ── */
+.table-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-divider {
+  width: 1px;
+  height: 20px;
+  background: #e2e4ea;
+  margin: 0 4px;
+}
+
+/* ── Sortable column headers ── */
+.sortable-th {
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.sortable-th:hover {
+  color: #6c47ff;
+}
+
+.sort-arrow {
+  margin-left: 4px;
+  font-size: 0.7rem;
+  color: #6c47ff;
+}
+
+/* ── Filter wrapper + dropdown ── */
+.filter-wrapper {
+  position: relative;
+}
+
+.filter-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #6c47ff;
+  color: white;
+  font-size: 0.7rem;
+  font-weight: 700;
+  margin-left: 4px;
+}
+
+.filter-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background: white;
+  border: 1px solid #e8e8f0;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  padding: 16px;
+  min-width: 220px;
+  z-index: 50;
+}
+
+.filter-section {
+  margin-bottom: 14px;
+}
+
+.filter-section:last-of-type {
+  margin-bottom: 0;
+}
+
+.filter-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #9ca3af;
+  margin: 0 0 8px;
+  letter-spacing: 0.04em;
+}
+
+.filter-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.875rem;
+  color: #1a1a2e;
+  padding: 4px 0;
+  cursor: pointer;
+}
+
+.filter-option input[type="checkbox"] {
+  accent-color: #6c47ff;
+  width: 15px;
+  height: 15px;
+  cursor: pointer;
+}
+
+.clear-filters-btn {
+  margin-top: 12px;
+  width: 100%;
+  padding: 7px;
+  border: 1px dashed #e2e4ea;
+  border-radius: 8px;
+  background: none;
+  color: #6b7080;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.clear-filters-btn:hover {
+  color: #dc2626;
+  border-color: #dc2626;
+}
+
 /* ── Pagination ── */
 .pagination {
   display: flex;
