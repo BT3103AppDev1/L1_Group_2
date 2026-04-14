@@ -115,6 +115,8 @@ export async function addSubscription(userId, sub) {
     status: sub.status || 'Active',
     notes: sub.notes || '',
     createdAt: serverTimestamp(),
+    renewalAlertCreated: false,
+    overdueAlertCreated: false,
   });
   await checkBudgetAndTriggerAlert(userId);
   return docRef.id;

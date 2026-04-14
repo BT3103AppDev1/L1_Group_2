@@ -33,12 +33,12 @@
 
       <div class="stat-card">
         <p class="stat-label">Pending Renewals</p>
-        <p class="stat-value">0</p>
+        <p class="stat-value">{{ pendingRenewals }}</p>
       </div>
 
       <div class="stat-card">
-        <p class="stat-label">Monthly Efficiency</p>
-        <p class="stat-value">94%</p>
+        <p class="stat-label">Estimated Monthly Spend</p>
+        <p class="stat-value">${{ monthlySpend }}</p>
       </div>
     </div>
 
@@ -63,7 +63,9 @@
           <div class="alert-content">
             <div class="alert-header">
               <h3 class="alert-title">{{ alert.title }}</h3>
-              <span class="alert-time">Just now</span>
+              <span class="alert-time">
+                {{ formatTime(alert.createdAt) }}
+              </span>
             </div>
 
             <p class="alert-message">{{ alert.message }}</p>
@@ -92,79 +94,74 @@
 
       </div>
 
-      
-      <div class="sidebar">
+<div class="sidebar">
 
-        <div class="sidebar-card">
-  <h3>⚙️ Preferences</h3>
-  <p class="muted">Customize how you receive alerts.</p>
+  <!-- Preferences Card -->
+  <div class="sidebar-card">
+    <h3>⚙️ Preferences</h3>
+    <p class="muted">Customize how you receive alerts.</p>
 
-  <!-- Email Notifications -->
-  <div class="pref-section">
-    <div 
-      class="pref-header"
-      @click="showEmailPrefs = !showEmailPrefs"
-    >
-      <span>Email Notifications</span>
-      <span>{{ showEmailPrefs ? "▲" : "▼" }}</span>
-    </div>
-
-    <div v-if="showEmailPrefs" class="pref-body">
-      <label>
-        <input 
-          type="checkbox"
-          v-model="preferences.emailNotifications"
-          @change="savePreferences"
-        />
-        Enable email notifications
-      </label>
-    </div>
-  </div>
-
-  <!-- Budget Threshold -->
-  <div class="pref-section">
-    <div 
-      class="pref-header"
-      @click="showBudgetPrefs = !showBudgetPrefs"
-    >
-      <span>Budget Threshold</span>
-      <span>{{ showBudgetPrefs ? "▲" : "▼" }}</span>
-    </div>
-
-    <div v-if="showBudgetPrefs" class="pref-body">
-      <label>Monthly Budget Cap ($)</label>
-      <input 
-        type="number"
-        v-model="preferences.budgetThreshold"
-        @change="savePreferences"
-      />
-    </div>
-  </div>
-  <div class="sidebar-card insight-card">
-  <div class="insight-header">
-    <span>💡</span>
-    <h4>Did you know?</h4>
-  </div>
-
-  <p>
-    Users who set budget caps save an average of $240 per year 
-    by catching unused recurring payments early.
-  </p>
-
-  <router-link to="/budget" class="insight-link">
-    Learn more about Budget Setup →
-  </router-link>
-</div>
-</div>
-        <div class="sidebar-card">
-          <h3>Recently Processed</h3>
-          <p>Spotify Duo — $14.99</p>
-        </div>
-
+    <div class="pref-section">
+      <div 
+        class="pref-header"
+        @click="showEmailPrefs = !showEmailPrefs"
+      >
+        <span>Email Notifications</span>
+        <span>{{ showEmailPrefs ? "▲" : "▼" }}</span>
       </div>
 
+      <div v-if="showEmailPrefs" class="pref-body">
+        <label>
+          <input 
+            type="checkbox"
+            v-model="preferences.emailNotifications"
+            @change="savePreferences"
+          />
+          Enable email notifications
+        </label>
+      </div>
     </div>
   </div>
+
+  <!-- Did You Know Card -->
+  <div class="sidebar-card insight-card">
+    <div class="insight-header">
+      <span>💡</span>
+      <h4>Did you know?</h4>
+    </div>
+
+    <p>
+      Users who actively monitor renewals cancel 23% more unused subscriptions 
+      within the first 3 months.
+    </p>
+  </div>
+
+  <!-- Recently Processed -->
+  <div class="sidebar-card">
+  <h3>Recently Processed</h3>
+
+  <div v-if="recentlyProcessed">
+    <p>
+      {{ recentlyProcessed.serviceName }} —
+      ${{ recentlyProcessed.billingAmount }}
+    </p>
+
+    <p class="text-sm text-gray-500">
+      Charged on
+      {{ new Date(recentlyProcessed.nextBillingDate).toLocaleDateString() }}
+    </p>
+  </div>
+
+  <p v-else>
+    No recent payments
+  </p>
+</div>
+
+</div>
+
+    </div>
+  </div>
+
 </template>
 
 <script setup>
@@ -252,10 +249,8 @@ const handleMarkAllAsRead = async () => {
 
 import { getPreferences, updatePreferences } from "../services/preferences"
 const showEmailPrefs = ref(false)
-const showBudgetPrefs = ref(false)
 const preferences = ref({
-  emailNotifications: true,
-  budgetThreshold: 500
+  emailNotifications: true
 })
 
 const savePreferences = async () => {
@@ -263,6 +258,29 @@ const savePreferences = async () => {
   if (!user) return
 
   await updatePreferences(user.uid, preferences.value)
+}
+
+const formatTime = (timestamp) => {
+  if (!timestamp) return ""
+
+  const date = timestamp.toDate
+    ? timestamp.toDate()
+    : new Date(timestamp)
+
+  const now = new Date()
+  const diffMs = now - date
+
+  const diffMinutes = Math.floor(diffMs / (1000 * 60))
+  const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
+
+  if (diffMinutes < 1) return "Just now"
+  if (diffMinutes < 60) return `${diffMinutes} min ago`
+  if (diffHours < 24) return `${diffHours} hr ago`
+  if (diffDays === 1) return "Yesterday"
+  if (diffDays < 7) return `${diffDays} days ago`
+
+  return date.toLocaleDateString()
 }
 
 const checkRenewals = async () => {
@@ -273,23 +291,38 @@ const checkRenewals = async () => {
   if (!user) return
 
   const today = new Date()
-  today.setHours(0,0,0,0)
-
-  subscriptions.value.forEach(async (sub) => {
-
-  if (!sub.nextBillingDate) return
+  today.setHours(0, 0, 0, 0)
 
   const renewalDate = sub.nextBillingDate.toDate
     ? sub.nextBillingDate.toDate()
     : new Date(sub.nextBillingDate)
 
-  renewalDate.setHours(0,0,0,0)
+  renewalDate.setHours(0, 0, 0, 0)
+  const diffTime = renewalDate - today
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24))
 
-  const diffInDays = Math.round(
-    (renewalDate - today) / (1000 * 60 * 60 * 24)
+if (diffInDays < 0 && sub.overdueAlertCreated !== true) {
+
+  await addDoc(
+    collection(db, `users/${auth.currentUser.uid}/alerts`),
+    {
+      title: `Payment Overdue: ${sub.serviceName}`,
+      message: `${sub.serviceName} renewal date has passed. Please check your payment method.`,
+      type: "renewal",
+      severity: "critical",
+      amount: sub.billingAmount,
+      read: false,
+      createdAt: serverTimestamp()
+    }
   )
 
-  if (diffInDays >= 0 && diffInDays <= 2 && !sub.renewalAlertCreated) {
+  await updateDoc(
+    doc(db, `users/${auth.currentUser.uid}/subscriptions/${sub.id}`),
+    { overdueAlertCreated: true }
+  )
+}
+
+  else if (diffInDays >= 0 && diffInDays <= 2 && !sub.renewalAlertCreated) {
 
     await addDoc(
       collection(db, `users/${auth.currentUser.uid}/alerts`),
@@ -309,26 +342,174 @@ const checkRenewals = async () => {
       { renewalAlertCreated: true }
     )
   }
-})
 }
+
+const pendingRenewals = computed(() => {
+  const today = new Date()
+  today.setHours(0,0,0,0)
+
+  return subscriptions.value.filter(sub => {
+    if (!sub.nextBillingDate) return false
+
+    const renewalDate = sub.nextBillingDate.toDate
+      ? sub.nextBillingDate.toDate()
+      : new Date(sub.nextBillingDate)
+
+    renewalDate.setHours(0,0,0,0)
+
+    const diffInDays = Math.floor(
+      (renewalDate - today) / (1000 * 60 * 60 * 24)
+    )
+
+    return diffInDays >= 0 && diffInDays <= 2
+  }).length
+})
+const monthlySpend = computed(() => {
+  return subscriptions.value.reduce((total, sub) => {
+    if (!sub.billingAmount) return total
+
+    // If yearly, convert to monthly estimate
+    if (sub.billingCycle === "Yearly") {
+      return total + sub.billingAmount / 12
+    }
+
+    return total + sub.billingAmount
+  }, 0).toFixed(2)
+})
 
 const loadSubscriptions = async () => {
   const user = auth.currentUser
   if (!user) return
 
   subscriptions.value = await getSubscriptions(user.uid)
+  console.log("SUBSCRIPTIONS:", subscriptions.value)
+}
+
+const recentlyProcessed = computed(() => {
+  const today = new Date()
+  today.setHours(0,0,0,0)
+
+  const processed = subscriptions.value
+    .filter(sub => {
+      if (!sub.nextBillingDate) return false
+
+      const renewalDate = new Date(sub.nextBillingDate)
+      renewalDate.setHours(0,0,0,0)
+
+      return renewalDate < today
+    })
+    .sort((a, b) => {
+      return new Date(b.nextBillingDate) - new Date(a.nextBillingDate)
+    })
+
+  return processed[0] || null
+})
+
+
+
+const checkDuplicateCategories = async () => {
+  const user = auth.currentUser
+  if (!user) return
+
+  const categoryCount = {}
+
+  subscriptions.value.forEach(sub => {
+    if (!sub.category) return
+
+    if (!categoryCount[sub.category]) {
+      categoryCount[sub.category] = []
+    }
+
+    categoryCount[sub.category].push(sub)
+  })
+
+  for (const category in categoryCount) {
+    if (categoryCount[category].length >= 2) {
+      const alreadyExists = alerts.value.some(alert =>
+        alert.type === "category" &&
+        alert.title === `Multiple ${category} Subscriptions`
+    )
+
+if (alreadyExists) continue
+
+      await addDoc(
+        collection(db, `users/${user.uid}/alerts`),
+        {
+          title: `Multiple ${category} Subscriptions`,
+          message: `You have ${categoryCount[category].length} subscriptions in ${category}. Consider reviewing them.`,
+          type: "category",
+          severity: "info",
+          read: false,
+          createdAt: serverTimestamp()
+        }
+      )
+    }
+  }
+}
+
+const checkMultipleRenewalsSameDay = async () => {
+  const user = auth.currentUser
+  if (!user) return
+
+  const renewalMap = {}
+
+  // Group subscriptions by renewal date
+  subscriptions.value.forEach(sub => {
+    if (!sub.nextBillingDate) return
+
+    const dateObj = sub.nextBillingDate.toDate
+      ? sub.nextBillingDate.toDate()
+      : new Date(sub.nextBillingDate)
+
+    const dateKey = dateObj.toDateString()
+
+    if (!renewalMap[dateKey]) {
+      renewalMap[dateKey] = []
+    }
+
+    renewalMap[dateKey].push(sub)
+  })
+
+  // Check for duplicate dates
+  for (const date in renewalMap) {
+    if (renewalMap[date].length >= 2) {
+
+      const alreadyExists = alerts.value.some(alert =>
+        alert.type === "multi-renewal" &&
+        alert.message.includes(date)
+      )
+
+      if (alreadyExists) continue
+
+      await addDoc(
+        collection(db, `users/${user.uid}/alerts`),
+        {
+          title: "Multiple Renewals Same Day",
+          message: `${renewalMap[date].length} subscriptions renew on ${new Date(date).toLocaleDateString()}.`,
+          type: "multi-renewal",
+          severity: "warning",
+          read: false,
+          createdAt: serverTimestamp()
+        }
+      )
+    }
+  }
 }
 
 const formatSeverity = (alert) => {
-  if (alert.type === "renewal") return "Renewal Soon"
+  if (alert.severity === "critical") return "Overdue"
+  if (alert.severity === "warning") return "Renewal Soon"
   if (alert.type === "budget") return "Budget Alert"
+  if (alert.severity === "info") return "Info"
   return alert.severity
 }
 
 onMounted(async () => {
   await loadSubscriptions()
-  await checkRenewals()
   await loadAlerts()
+  await checkRenewals()
+  await checkDuplicateCategories()
+  await checkMultipleRenewalsSameDay()
 })
 </script>
 
