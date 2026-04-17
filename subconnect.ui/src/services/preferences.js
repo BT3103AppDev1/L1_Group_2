@@ -14,6 +14,7 @@ export const getPreferences = async (userId) => {
   const defaults = {
     emailNotifications: true,
     budgetThreshold: 500,
+    currency: 'SGD',
     updatedAt: serverTimestamp()
   }
 

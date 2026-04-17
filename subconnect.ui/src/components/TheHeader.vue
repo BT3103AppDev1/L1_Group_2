@@ -55,7 +55,7 @@
             <div class="dropdown-divider"></div>
             
             <button class="dropdown-item" @click="goToProfile">Profile</button>
-            <button class="dropdown-item" @click="dropdownOpen = false">Settings</button>
+            <button class="dropdown-item" @click="goToSettings">Settings</button>
             <div class="dropdown-divider"></div>
             <button class="dropdown-item dropdown-item--danger" @click="handleLogout">Log Out</button>
           </div>
@@ -112,10 +112,14 @@ function handleOutsideClick(e) {
   }
 }
 
-// NEW: Navigate to the Profile page and close the dropdown
 function goToProfile() {
   dropdownOpen.value = false;
   router.push('/profile');
+}
+
+function goToSettings() {
+  dropdownOpen.value = false;
+  router.push('/settings');
 }
 
 const handleLogout = async () => {

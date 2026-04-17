@@ -12,7 +12,7 @@
     <div class="summary-grid">
       <div class="summary-card">
         <p class="card-label">Potential Annual Savings</p>
-        <p class="card-value">${{ totalSavings.toFixed(2) }}</p>
+        <p class="card-value">{{ currencySymbol }}{{ totalSavings.toFixed(2) }}</p>
         <p class="card-sub">Amount you could save yearly</p>
       </div>
 
@@ -24,7 +24,7 @@
 
       <div class="summary-card">
         <p class="card-label">Savings vs Market Average</p>
-        <p class="card-value" :class="averageDifference > 0 ? 'price-bad' : 'price-good'">{{ averageDifference > 0 ? '+' : '-' }}${{ Math.abs(averageDifference).toFixed(2) }}</p>
+        <p class="card-value" :class="averageDifference > 0 ? 'price-bad' : 'price-good'">{{ averageDifference > 0 ? '+' : '-' }}{{ currencySymbol }}{{ Math.abs(averageDifference).toFixed(2) }}</p>
         <p class="card-sub">Difference from market pricing</p>
       </div>
     </div>
@@ -43,10 +43,10 @@
           <div class="chart-label">{{ item.name }}</div>
           <div class="bar-container">
             <div class="bar user-bar" :style="{ width: getUserWidth(item) + '%' }">
-              ${{ item.userPrice }}
+              {{ currencySymbol }}{{ item.userPrice }}
             </div>
             <div class="bar benchmark-bar" :style="{ width: getBenchmarkWidth(item) + '%' }">
-              ${{ item.benchmarkPrice }}
+              {{ currencySymbol }}{{ item.benchmarkPrice }}
             </div>
           </div>
         </div>
@@ -77,8 +77,8 @@
                 <span class="service-name">{{ item.name }}</span>
               </td>
               <td><span class="category-tag">{{ item.category || 'Other' }}</span></td>
-              <td class="cost-cell">${{ item.userPrice }}</td>
-              <td>${{ item.benchmarkPrice }}</td>
+              <td class="cost-cell">{{ currencySymbol }}{{ item.userPrice }}</td>
+              <td>{{ currencySymbol }}{{ item.benchmarkPrice }}</td>
               <td>
                 <span class="status-badge" :class="`status-badge--${item.status}`">
                   {{ item.status }}
@@ -149,12 +149,12 @@
                 </div>
                 <div>
                   <span class="ai-card-name">{{ comp.name }}</span>
-                  <span class="ai-card-current">Current: ${{ comp.userPrice.toFixed(2) }}/mo</span>
+                  <span class="ai-card-current">Current: {{ currencySymbol }}{{ comp.userPrice.toFixed(2) }}/mo</span>
                 </div>
               </div>
               <div class="ai-card-meta">
                 <span v-if="bestSavingsForComp(comp) > 0" class="ai-savings-pill">
-                  Save up to ${{ bestSavingsForComp(comp).toFixed(2) }}/mo
+                  Save up to {{ currencySymbol }}{{ bestSavingsForComp(comp).toFixed(2) }}/mo
                 </span>
                 <!-- Per-type loading indicators for this card -->
                 <span v-if="isCompLoading(comp)" class="spinner spinner--sm"></span>
@@ -183,8 +183,8 @@
                         <span class="alt-name">{{ alt.name }}</span>
                       </div>
                       <div class="alt-right">
-                        <span class="alt-price">${{ alt.price.toFixed(2) }}/mo</span>
-                        <span class="alt-save">save ${{ alt.savingsPerMonth.toFixed(2) }}/mo</span>
+                        <span class="alt-price">{{ currencySymbol }}{{ alt.price.toFixed(2) }}/mo</span>
+                        <span class="alt-save">save {{ currencySymbol }}{{ alt.savingsPerMonth.toFixed(2) }}/mo</span>
                       </div>
                       <p class="alt-note">{{ alt.note }}</p>
                     </div>
@@ -233,6 +233,8 @@ import { collection, getDocs, doc, updateDoc, serverTimestamp } from 'firebase/f
 import { auth } from '@/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import { analyzeSubscriptions as geminiAnalyze } from '@/services/gemini';
+import { computed } from 'vue';
+import { loadCurrency, getSymbol, currentCurrency, getCountry } from '@/composables/useCurrency';
 
 const OPTION_LIST = [
   { key: 'competitors', label: 'Competitors' },
@@ -243,6 +245,12 @@ const OPTION_LIST = [
 
 export default {
   name: 'ComparisonView',
+
+  setup() {
+    return {
+      currencySymbol: computed(() => getSymbol()),
+    };
+  },
 
   data() {
     return {
@@ -310,6 +318,7 @@ export default {
     onAuthStateChanged(auth, async (user) => {
       if (!user) return;
       this.uid = user.uid;
+      await loadCurrency(user.uid);
       await this.loadData();
       // Auto-run competitors for any subscription that hasn't been analysed yet
       await this.autoRunCompetitors();
@@ -407,7 +416,7 @@ export default {
     // Shared helper: calls Gemini for each group and writes results to Firestore + local state
     async _runAnalysis(groups) {
       for (const group of groups) {
-        const analyses = await geminiAnalyze(group.subs, group.optionTypes);
+        const analyses = await geminiAnalyze(group.subs, group.optionTypes, currentCurrency.value);
 
         for (const analysis of analyses) {
           const comp = this.comparisons.find((c) => c.id === analysis.subId);

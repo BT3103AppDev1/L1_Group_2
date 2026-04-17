@@ -9,7 +9,14 @@ const OPTION_DEFINITIONS = {
     'List any cheaper ad-supported or feature-limited tier plans available for this service.',
 };
 
-function buildPrompt(subscriptions, optionTypes) {
+const COUNTRY_MAP = {
+  SGD: 'Singapore', USD: 'United States', EUR: 'Europe (EU)',
+  GBP: 'United Kingdom', AUD: 'Australia', JPY: 'Japan',
+  MYR: 'Malaysia', IDR: 'Indonesia', HKD: 'Hong Kong',
+  KRW: 'South Korea', INR: 'India', CNY: 'China',
+};
+
+function buildPrompt(subscriptions, optionTypes, currency, country) {
   const definitionLines = optionTypes
     .map((t) => `- ${t}: ${OPTION_DEFINITIONS[t]}`)
     .join('\n');
@@ -22,6 +29,8 @@ function buildPrompt(subscriptions, optionTypes) {
     .join(', ');
 
   return `You are a subscription cost optimization advisor.
+The user is located in ${country}. Return all prices in ${currency}.
+
 For each subscription listed, analyse ONLY these option types: ${optionTypes.join(', ')}.
 
 Option type definitions:
@@ -29,8 +38,9 @@ ${definitionLines}
 
 Rules:
 - Only include alternatives genuinely cheaper than the user's current price.
-- Use real, current USD pricing (2024–2025). Omit any alternative you are not confident about.
-- savingsPerMonth = currentMonthlyPrice - alternative price, rounded to 2 decimal places.
+- Use real, current ${currency} pricing (2024–2025) for ${country} where available; fall back to USD if no local pricing exists.
+- Prioritise service plans and offers available in ${country} (e.g. regional pricing, local student deals).
+- savingsPerMonth = currentMonthlyPrice - alternative price, rounded to 2 decimal places. Both values must be in ${currency}.
 - For family plans, price = per-person cost (total plan cost / 4).
 - The "byType" object MUST contain a key for EVERY requested option type, even if no alternatives exist.
 - If no cheaper alternatives exist for a type, use alternatives: [] and recommendation: "Already on best value plan for this category."
@@ -50,10 +60,11 @@ ${JSON.stringify(subscriptions, null, 2)}`;
  * @param {string[]} optionTypes - subset of ['competitors','student','family','cheaper_tier']
  * @returns {Promise<Array>} analyses
  */
-export async function analyzeSubscriptions(subscriptions, optionTypes) {
+export async function analyzeSubscriptions(subscriptions, optionTypes, currency = 'SGD') {
   const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
   if (!apiKey) throw new Error('VITE_GEMINI_API_KEY is not set in your .env file.');
 
+  const country = COUNTRY_MAP[currency] ?? 'Singapore';
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
 
   const prompt = buildPrompt(
@@ -64,6 +75,8 @@ export async function analyzeSubscriptions(subscriptions, optionTypes) {
       currentMonthlyPrice: s.userPrice,
     })),
     optionTypes,
+    currency,
+    country,
   );
 
   const response = await fetch(url, {
