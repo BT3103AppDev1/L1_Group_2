@@ -23,4 +23,5 @@ Make sure you have [Node.js](https://nodejs.org/) installed on your computer.
 
 1. **Clone the repository:**
    ```bash
-   git clone [https://github.com/](https://github.com/)[Your-GitHub-Username]/final-project-group_2.git
+   git clone https://github.com/BT3103AppDev1/L1_Group_2.git
+   ```
