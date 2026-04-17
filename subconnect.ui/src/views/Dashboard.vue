@@ -58,7 +58,7 @@
             </span>
           </div>
           <p class="card-label">Total Monthly Spend</p>
-          <p class="card-value">${{ monthlyTotal.toFixed(2) }}</p>
+          <p class="card-value">{{ currencySymbol }}{{ monthlyTotal.toFixed(2) }}</p>
           <p class="card-sub">Across {{ subscriptions.length }} active subscription{{ subscriptions.length !== 1 ? 's' : '' }}</p>
         </div>
 
@@ -72,7 +72,7 @@
             </div>
           </div>
           <p class="card-label">Yearly Spend Overview</p>
-          <p class="card-value">${{ yearlyTotal.toFixed(2) }}</p>
+          <p class="card-value">{{ currencySymbol }}{{ yearlyTotal.toFixed(2) }}</p>
           <p class="card-sub">Projected annual burn rate</p>
         </div>
 
@@ -121,8 +121,8 @@
                 :curve="true"
                 :area="true"
                 :legend="false"
-                :ytitle="'Amount ($)'"
-                prefix="$"
+                :ytitle="'Amount (' + currencySymbol + ')'"
+                :prefix="currencySymbol"
                 height="280px"
                 :library="chartLibraryOptions"
               />
@@ -142,7 +142,7 @@
                 <pie-chart
                   :data="categoryChartData"
                   :colors="pieColors"
-                  prefix="$"
+                  :prefix="currencySymbol"
                   height="220px"
                   :legend="false"
                   :library="pieChartOptions"
@@ -160,7 +160,7 @@
                 <pie-chart
                   :data="topSubsChartData"
                   :colors="pieColors"
-                  prefix="$"
+                  :prefix="currencySymbol"
                   height="220px"
                   :legend="false"
                   :library="pieChartOptions"
@@ -211,7 +211,7 @@
               <p class="alert-desc">{{ alert.description }}</p>
             </div>
             <div class="alert-right">
-              <span class="alert-cost">${{ alert.cost }}</span>
+              <span class="alert-cost">{{ currencySymbol }}{{ alert.cost }}</span>
               <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" width="14" height="14" class="alert-chevron">
                 <polyline points="7,4 13,10 7,16"/>
               </svg>
@@ -374,7 +374,7 @@
                   <span class="service-name">{{ sub.serviceName }}</span>
                 </td>
                 <td><span class="category-tag">{{ sub.category || 'Other' }}</span></td>
-                <td class="cost-cell">${{ toMonthlyCost(sub).toFixed(2) }}</td>
+                <td class="cost-cell">{{ currencySymbol }}{{ toMonthlyCost(sub).toFixed(2) }}</td>
                 <td class="date-cell">{{ formatDate(sub.nextBillingDate) }}</td>
                 <td>
                   <span class="status-badge" :class="`status-badge--${sub.status?.toLowerCase()}`">
@@ -562,6 +562,7 @@
 </template>
 
 <script>
+import { computed } from 'vue'
 import { auth, db } from '@/firebase'
 import { onAuthStateChanged } from 'firebase/auth'
 import { updateDoc, doc } from 'firebase/firestore'
@@ -575,6 +576,7 @@ import {
   toMonthlyCost,
 } from '@/services/subscriptions'
 import DashboardAlertsPreview from "@/components/DashboardAlertsPreview.vue"
+import { loadCurrency, getSymbol } from '@/composables/useCurrency'
 
 const AVATAR_COLORS = [
   '#6c47ff', '#3b82f6', '#10b981', '#f59e0b',
@@ -585,7 +587,13 @@ export default {
   name: 'DashboardView',
 
   components: {
-    DashboardAlertsPreview  
+    DashboardAlertsPreview,
+  },
+
+  setup() {
+    return {
+      currencySymbol: computed(() => getSymbol()),
+    }
   },
 
   data() {
@@ -871,7 +879,7 @@ export default {
           tooltip: {
             callbacks: {
               label(ctx) {
-                return ` ${ctx.label}: $${(ctx.parsed || 0).toFixed(2)}`
+                return ` ${ctx.label}: ${getSymbol()}${(ctx.parsed || 0).toFixed(2)}`
               },
             },
           },
@@ -919,6 +927,7 @@ export default {
         const [subs, budget] = await Promise.all([
           getSubscriptions(user.uid),
           getBudget(user.uid),
+          loadCurrency(user.uid),
         ])
         this.subscriptions = subs
         this.budgetCap = budget

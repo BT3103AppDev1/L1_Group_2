@@ -38,7 +38,7 @@
 
       <div class="stat-card">
         <p class="stat-label">Estimated Monthly Spend</p>
-        <p class="stat-value">${{ monthlySpend }}</p>
+        <p class="stat-value">{{ currencySymbol }}{{ monthlySpend }}</p>
       </div>
     </div>
 
@@ -143,7 +143,7 @@
   <div v-if="recentlyProcessed">
     <p>
       {{ recentlyProcessed.serviceName }} —
-      ${{ recentlyProcessed.billingAmount }}
+      {{ currencySymbol }}{{ recentlyProcessed.billingAmount }}
     </p>
 
     <p class="text-sm text-gray-500">
@@ -166,6 +166,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from "vue"
+import { useCurrency, loadCurrency } from "@/composables/useCurrency"
 import { getAuth } from "firebase/auth"
 import { 
   getAlerts, 
@@ -201,6 +202,7 @@ const filteredAlerts = computed(() => {
 })
 
 const auth = getAuth()
+const { symbol: currencySymbol } = useCurrency()
 
 const loadAlerts = async () => {
   const user = auth.currentUser
@@ -505,6 +507,8 @@ const formatSeverity = (alert) => {
 }
 
 onMounted(async () => {
+  const user = auth.currentUser
+  if (user) await loadCurrency(user.uid)
   await loadSubscriptions()
   await loadAlerts()
   await checkRenewals()

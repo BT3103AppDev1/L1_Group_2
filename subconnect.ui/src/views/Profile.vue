@@ -37,10 +37,10 @@
 
         <div class="form-group">
           <label>Email Address</label>
-          <input 
-            :value="userEmail" 
-            type="email" 
-            disabled 
+          <input
+            :value="userEmail"
+            type="email"
+            disabled
             class="disabled-input"
           />
         </div>
@@ -60,8 +60,7 @@
 import { ref, onMounted } from 'vue';
 import { getAuth, updateProfile } from 'firebase/auth';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { storage } from '../firebase'; // Import the storage we just exported!
-
+import { storage } from '../firebase';
 const auth = getAuth();
 const userEmail = ref('');
 const displayName = ref('');
