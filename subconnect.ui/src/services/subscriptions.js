@@ -20,6 +20,7 @@ import {
   query,
   orderBy,
   serverTimestamp,
+  deleteField,
 } from 'firebase/firestore';
 import { db } from '@/firebase';
 import { createAlert } from './alerts';
@@ -133,6 +134,8 @@ export async function updateSubscription(userId, subId, updates) {
   if (payload.billingAmount !== undefined) {
     payload.billingAmount = Number(payload.billingAmount);
   }
+  // Clear AI cache so Comparison page re-analyses on next visit
+  payload.aiCache = deleteField();
   await updateDoc(subDocRef(userId, subId), payload);
   await checkBudgetAndTriggerAlert(userId);
 }
