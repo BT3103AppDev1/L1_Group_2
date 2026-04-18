@@ -12,7 +12,9 @@
     <div class="summary-grid">
       <div class="summary-card">
         <p class="card-label">Potential Annual Savings</p>
-        <p class="card-value">{{ currencySymbol }}{{ totalSavings.toFixed(2) }}</p>
+        <p class="card-value">
+          {{ currencySymbol }}{{ totalSavings.toFixed(2) }}
+        </p>
         <p class="card-sub">Amount you could save yearly</p>
       </div>
 
@@ -24,7 +26,13 @@
 
       <div class="summary-card">
         <p class="card-label">Savings vs Market Average</p>
-        <p class="card-value" :class="averageDifference > 0 ? 'price-bad' : 'price-good'">{{ averageDifference > 0 ? '+' : '-' }}{{ currencySymbol }}{{ Math.abs(averageDifference).toFixed(2) }}</p>
+        <p
+          class="card-value"
+          :class="averageDifference > 0 ? 'price-bad' : 'price-good'"
+        >
+          {{ averageDifference > 0 ? '+' : '-' }}{{ currencySymbol
+          }}{{ Math.abs(averageDifference).toFixed(2) }}
+        </p>
         <p class="card-sub">Difference from market pricing</p>
       </div>
     </div>
@@ -33,7 +41,7 @@
     <div class="chart-card">
       <div class="chart-header">
         <div>
-          <h2 class="chart-title">Cost vs Market Average</h2>
+          <h2 class="chart-title">Your Price vs Market Average</h2>
           <p class="chart-sub">See how your spending compares.</p>
         </div>
       </div>
@@ -42,11 +50,27 @@
         <div v-for="item in comparisons" :key="item.name" class="chart-row">
           <div class="chart-label">{{ item.name }}</div>
           <div class="bar-container">
-            <div class="bar user-bar" :style="{ width: getUserWidth(item) + '%' }">
-              {{ currencySymbol }}{{ item.userPrice }}
+            <div class="bar-line">
+              <span class="bar-label">You</span>
+
+              <div
+                class="bar"
+                :class="item.userPrice > item.benchmarkPrice ? 'bar-bad' : 'bar-good'"
+                :style="{ width: getUserWidth(item) + '%' }"
+              >
+                {{ currencySymbol }}{{ item.userPrice }}
+              </div>
             </div>
-            <div class="bar benchmark-bar" :style="{ width: getBenchmarkWidth(item) + '%' }">
-              {{ currencySymbol }}{{ item.benchmarkPrice }}
+
+            <div class="bar-line">
+              <span class="bar-label">Avg</span>
+
+              <div
+                class="bar benchmark-bar"
+                :style="{ width: getBenchmarkWidth(item) + '%' }"
+              >
+                {{ currencySymbol }}{{ item.benchmarkPrice }}
+              </div>
             </div>
           </div>
         </div>
@@ -73,14 +97,23 @@
           <tbody>
             <tr v-for="item in comparisons" :key="item.name" class="sub-row">
               <td class="sub-service-cell">
-                <div class="service-avatar">{{ item.name.charAt(0).toUpperCase() }}</div>
+                <div class="service-avatar">
+                  {{ item.name.charAt(0).toUpperCase() }}
+                </div>
                 <span class="service-name">{{ item.name }}</span>
               </td>
-              <td><span class="category-tag">{{ item.category || 'Other' }}</span></td>
-              <td class="cost-cell">{{ currencySymbol }}{{ item.userPrice }}</td>
+              <td>
+                <span class="category-tag">{{ item.category || 'Other' }}</span>
+              </td>
+              <td class="cost-cell">
+                {{ currencySymbol }}{{ item.userPrice }}
+              </td>
               <td>{{ currencySymbol }}{{ item.benchmarkPrice }}</td>
               <td>
-                <span class="status-badge" :class="`status-badge--${item.status}`">
+                <span
+                  class="status-badge"
+                  :class="`status-badge--${item.status}`"
+                >
                   {{ item.status }}
                 </span>
               </td>
@@ -92,12 +125,13 @@
 
     <!-- ── AI Analysis Section ─────────────────────────────────── -->
     <div class="ai-section">
-
       <!-- Controls bar -->
       <div class="ai-controls-card">
         <div class="ai-controls-left">
           <span class="controls-heading">AI Savings Analysis</span>
-          <p class="controls-sub">Powered by Gemini &middot; Competitors checked automatically</p>
+          <p class="controls-sub">
+            Powered by Gemini &middot; Competitors checked automatically
+          </p>
         </div>
         <div class="ai-controls-right">
           <div class="toggle-group">
@@ -113,7 +147,12 @@
           </div>
           <button
             class="btn-analyse"
-            :disabled="aiLoading || autoRunning || comparisons.length === 0 || !hasUncachedData"
+            :disabled="
+              aiLoading ||
+              autoRunning ||
+              comparisons.length === 0 ||
+              !hasUncachedData
+            "
             @click="analyseAll"
           >
             <span v-if="aiLoading" class="spinner"></span>
@@ -126,7 +165,9 @@
       <!-- Error banner -->
       <div v-if="aiError" class="ai-error-banner">
         <span>{{ aiError }}</span>
-        <button class="ai-error-dismiss" @click="aiError = null">&times;</button>
+        <button class="ai-error-dismiss" @click="aiError = null">
+          &times;
+        </button>
       </div>
 
       <!-- Auto-running hint -->
@@ -149,16 +190,30 @@
                 </div>
                 <div>
                   <span class="ai-card-name">{{ comp.name }}</span>
-                  <span class="ai-card-current">Current: {{ currencySymbol }}{{ comp.userPrice.toFixed(2) }}/mo</span>
+                  <span class="ai-card-current"
+                    >Current: {{ currencySymbol
+                    }}{{ comp.userPrice.toFixed(2) }}/mo</span
+                  >
                 </div>
               </div>
               <div class="ai-card-meta">
-                <span v-if="bestSavingsForComp(comp) > 0" class="ai-savings-pill">
-                  Save up to {{ currencySymbol }}{{ bestSavingsForComp(comp).toFixed(2) }}/mo
+                <span
+                  v-if="bestSavingsForComp(comp) > 0"
+                  class="ai-savings-pill"
+                >
+                  Save up to {{ currencySymbol
+                  }}{{ bestSavingsForComp(comp).toFixed(2) }}/mo
                 </span>
                 <!-- Per-type loading indicators for this card -->
-                <span v-if="isCompLoading(comp)" class="spinner spinner--sm"></span>
-                <span class="ai-chevron" :class="{ 'ai-chevron--open': openCards.includes(comp.id) }">&#8250;</span>
+                <span
+                  v-if="isCompLoading(comp)"
+                  class="spinner spinner--sm"
+                ></span>
+                <span
+                  class="ai-chevron"
+                  :class="{ 'ai-chevron--open': openCards.includes(comp.id) }"
+                  >&#8250;</span
+                >
               </div>
             </div>
 
@@ -167,9 +222,20 @@
               <template v-for="opt in optionList" :key="opt.key">
                 <div v-if="enabledOptions[opt.key]" class="type-section">
                   <div class="type-section-header">
-                    <span class="type-badge" :class="`type-badge--${opt.key}`">{{ opt.label }}</span>
-                    <span v-if="!comp.aiCache?.[opt.key]" class="type-not-fetched">
-                      {{ aiLoading ? 'Analysing...' : 'Not yet analysed — click Analyse' }}
+                    <span
+                      class="type-badge"
+                      :class="`type-badge--${opt.key}`"
+                      >{{ opt.label }}</span
+                    >
+                    <span
+                      v-if="!comp.aiCache?.[opt.key]"
+                      class="type-not-fetched"
+                    >
+                      {{
+                        aiLoading
+                          ? 'Analysing...'
+                          : 'Not yet analysed — click Analyse'
+                      }}
                     </span>
                   </div>
 
@@ -183,13 +249,22 @@
                         <span class="alt-name">{{ alt.name }}</span>
                       </div>
                       <div class="alt-right">
-                        <span class="alt-price">{{ currencySymbol }}{{ alt.price.toFixed(2) }}/mo</span>
-                        <span class="alt-save">save {{ currencySymbol }}{{ alt.savingsPerMonth.toFixed(2) }}/mo</span>
+                        <span class="alt-price"
+                          >{{ currencySymbol
+                          }}{{ alt.price.toFixed(2) }}/mo</span
+                        >
+                        <span class="alt-save"
+                          >save {{ currencySymbol
+                          }}{{ alt.savingsPerMonth.toFixed(2) }}/mo</span
+                        >
                       </div>
                       <p class="alt-note">{{ alt.note }}</p>
                     </div>
 
-                    <p v-if="!comp.aiCache[opt.key].alternatives?.length" class="alt-empty">
+                    <p
+                      v-if="!comp.aiCache[opt.key].alternatives?.length"
+                      class="alt-empty"
+                    >
                       No cheaper alternatives found for this category.
                     </p>
                   </template>
@@ -197,7 +272,10 @@
               </template>
 
               <!-- Best recommendation -->
-              <div v-if="bestRecommendationForComp(comp)" class="ai-recommendation">
+              <div
+                v-if="bestRecommendationForComp(comp)"
+                class="ai-recommendation"
+              >
                 <span class="rec-icon">&#128161;</span>
                 {{ bestRecommendationForComp(comp) }}
               </div>
@@ -220,8 +298,14 @@
       </template>
 
       <!-- Empty state when auto-run is done but no results visible yet -->
-      <div v-else-if="!autoRunning && !aiLoading && comparisons.length > 0 && !hasAnyResults" class="ai-empty">
-        Click <strong>Analyse</strong> to get AI-powered savings suggestions for your subscriptions.
+      <div
+        v-else-if="
+          !autoRunning && !aiLoading && comparisons.length > 0 && !hasAnyResults
+        "
+        class="ai-empty"
+      >
+        Click <strong>Analyse</strong> to get AI-powered savings suggestions for
+        your subscriptions.
       </div>
     </div>
   </div>
@@ -229,12 +313,23 @@
 
 <script>
 import { db } from '@/firebase';
-import { collection, getDocs, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import {
+  collection,
+  getDocs,
+  doc,
+  updateDoc,
+  serverTimestamp,
+} from 'firebase/firestore';
 import { auth } from '@/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import { analyzeSubscriptions as geminiAnalyze } from '@/services/gemini';
 import { computed } from 'vue';
-import { loadCurrency, getSymbol, currentCurrency, getCountry } from '@/composables/useCurrency';
+import {
+  loadCurrency,
+  getSymbol,
+  currentCurrency,
+  getCountry,
+} from '@/composables/useCurrency';
 
 const OPTION_LIST = [
   { key: 'competitors', label: 'Competitors' },
@@ -282,7 +377,9 @@ export default {
 
     score() {
       if (this.comparisons.length === 0) return 0;
-      const good = this.comparisons.filter((i) => i.status === 'excellent').length;
+      const good = this.comparisons.filter(
+        (i) => i.status === 'excellent',
+      ).length;
       return Math.round((good / this.comparisons.length) * 100);
     },
 
@@ -327,8 +424,13 @@ export default {
 
   methods: {
     async loadData() {
-      const subSnap = await getDocs(collection(db, 'users', this.uid, 'subscriptions'));
-      const subscriptions = subSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      const subSnap = await getDocs(
+        collection(db, 'users', this.uid, 'subscriptions'),
+      );
+      const subscriptions = subSnap.docs.map((d) => ({
+        id: d.id,
+        ...d.data(),
+      }));
 
       const benchSnap = await getDocs(collection(db, 'benchmarks'));
       const benchmarks = benchSnap.docs.map((d) => d.data());
@@ -365,7 +467,9 @@ export default {
       this.autoRunning = true;
       // Auto-open all cards once results arrive
       try {
-        await this._runAnalysis([{ optionTypes: ['competitors'], subs: uncached }]);
+        await this._runAnalysis([
+          { optionTypes: ['competitors'], subs: uncached },
+        ]);
         this.openCards = this.comparisons
           .filter((c) => this.hasResultsForComp(c))
           .map((c) => c.id);
@@ -401,7 +505,10 @@ export default {
         await this._runAnalysis(groupList);
         // Expand cards that now have results
         for (const comp of this.comparisons) {
-          if (this.hasResultsForComp(comp) && !this.openCards.includes(comp.id)) {
+          if (
+            this.hasResultsForComp(comp) &&
+            !this.openCards.includes(comp.id)
+          ) {
             this.openCards.push(comp.id);
           }
         }
@@ -416,7 +523,11 @@ export default {
     // Shared helper: calls Gemini for each group and writes results to Firestore + local state
     async _runAnalysis(groups) {
       for (const group of groups) {
-        const analyses = await geminiAnalyze(group.subs, group.optionTypes, currentCurrency.value);
+        const analyses = await geminiAnalyze(
+          group.subs,
+          group.optionTypes,
+          currentCurrency.value,
+        );
 
         for (const analysis of analyses) {
           const comp = this.comparisons.find((c) => c.id === analysis.subId);
@@ -438,8 +549,11 @@ export default {
           }
 
           // Write to Firestore in the background (don't block UI)
-          updateDoc(doc(db, 'users', this.uid, 'subscriptions', analysis.subId), firestoreUpdate).catch(
-            (err) => console.error('Cache write failed for', analysis.subId, err),
+          updateDoc(
+            doc(db, 'users', this.uid, 'subscriptions', analysis.subId),
+            firestoreUpdate,
+          ).catch((err) =>
+            console.error('Cache write failed for', analysis.subId, err),
           );
         }
       }
@@ -506,7 +620,9 @@ export default {
         const rec = comp.aiCache[opt.key].recommendation;
         const maxSav = Math.max(
           0,
-          ...(comp.aiCache[opt.key].alternatives || []).map((a) => a.savingsPerMonth || 0),
+          ...(comp.aiCache[opt.key].alternatives || []).map(
+            (a) => a.savingsPerMonth || 0,
+          ),
         );
         if (maxSav > bestSavings) {
           bestSavings = maxSav;
@@ -589,8 +705,12 @@ export default {
   margin-top: 4px;
 }
 
-.price-good { color: #16a34a; }
-.price-bad  { color: #dc2626; }
+.price-good {
+  color: #16a34a;
+}
+.price-bad {
+  color: #dc2626;
+}
 
 /* ── Chart ── */
 .chart-card {
@@ -601,7 +721,9 @@ export default {
   margin-bottom: 24px;
 }
 
-.chart-header { margin-bottom: 20px; }
+.chart-header {
+  margin-bottom: 20px;
+}
 
 .chart-title {
   font-size: 1rem;
@@ -619,7 +741,10 @@ export default {
   gap: 12px;
 }
 
-.chart-row { display: flex; flex-direction: column; }
+.chart-row {
+  display: flex;
+  flex-direction: column;
+}
 
 .chart-label {
   font-size: 0.8rem;
@@ -628,7 +753,22 @@ export default {
 
 .bar-container {
   display: flex;
-  gap: 6px;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.bar-line {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.bar-label {
+  width: 42px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #6b7080;
+  flex-shrink: 0;
 }
 
 .bar {
@@ -641,8 +781,17 @@ export default {
   padding-left: 6px;
 }
 
-.user-bar      { background: #6c47ff; }
-.benchmark-bar { background: #10b981; }
+.benchmark-bar {
+  background: #6c47ff;
+}
+
+.bar-good {
+  background: #16a34a;
+}
+
+.bar-bad {
+  background: #dc2626;
+}
 
 /* ── Table ── */
 .table-section {
@@ -663,14 +812,18 @@ export default {
   font-weight: 700;
 }
 
-.table-wrapper { overflow-x: auto; }
+.table-wrapper {
+  overflow-x: auto;
+}
 
 .sub-table {
   width: 100%;
   border-collapse: collapse;
 }
 
-.sub-table thead tr { background: #fafafa; }
+.sub-table thead tr {
+  background: #fafafa;
+}
 
 .sub-table th {
   padding: 10px 16px;
@@ -687,7 +840,9 @@ export default {
   font-size: 0.875rem;
 }
 
-.sub-row { border-bottom: 1px solid #f9f9fb; }
+.sub-row {
+  border-bottom: 1px solid #f9f9fb;
+}
 
 .sub-service-cell {
   display: flex;
@@ -715,7 +870,9 @@ export default {
   font-size: 0.85rem;
 }
 
-.service-name { font-weight: 600; }
+.service-name {
+  font-weight: 600;
+}
 
 .category-tag {
   background: #f4f4f8;
@@ -725,7 +882,9 @@ export default {
   border-radius: 6px;
 }
 
-.cost-cell { font-weight: 600; }
+.cost-cell {
+  font-weight: 600;
+}
 
 .status-badge {
   font-size: 0.75rem;
@@ -734,9 +893,18 @@ export default {
   border-radius: 6px;
 }
 
-.status-badge--excellent { background: #f0fdf4; color: #16a34a; }
-.status-badge--fair      { background: #fff7ed; color: #ea580c; }
-.status-badge--poor      { background: #fef2f2; color: #dc2626; }
+.status-badge--excellent {
+  background: #f0fdf4;
+  color: #16a34a;
+}
+.status-badge--fair {
+  background: #fff7ed;
+  color: #ea580c;
+}
+.status-badge--poor {
+  background: #fef2f2;
+  color: #dc2626;
+}
 
 /* ── AI Section ── */
 .ai-section {
@@ -850,12 +1018,14 @@ export default {
   width: 12px;
   height: 12px;
   border-width: 1.5px;
-  border-color: rgba(255,255,255,0.6);
+  border-color: rgba(255, 255, 255, 0.6);
   border-top-color: transparent;
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* Status hints */
@@ -966,7 +1136,9 @@ export default {
   line-height: 1;
 }
 
-.ai-chevron--open { transform: rotate(90deg); }
+.ai-chevron--open {
+  transform: rotate(90deg);
+}
 
 /* Card body */
 .ai-card-body {
@@ -999,10 +1171,22 @@ export default {
   letter-spacing: 0.03em;
 }
 
-.type-badge--competitors  { background: #f5f3ff; color: #6c47ff; }
-.type-badge--student      { background: #eff6ff; color: #2563eb; }
-.type-badge--family       { background: #f0fdf4; color: #16a34a; }
-.type-badge--cheaper_tier { background: #f3f4f6; color: #6b7080; }
+.type-badge--competitors {
+  background: #f5f3ff;
+  color: #6c47ff;
+}
+.type-badge--student {
+  background: #eff6ff;
+  color: #2563eb;
+}
+.type-badge--family {
+  background: #f0fdf4;
+  color: #16a34a;
+}
+.type-badge--cheaper_tier {
+  background: #f3f4f6;
+  color: #6b7080;
+}
 
 .type-not-fetched {
   font-size: 0.78rem;
