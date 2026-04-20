@@ -140,7 +140,7 @@
         <div class="ai-controls-left">
           <span class="controls-heading">AI Savings Analysis</span>
           <p class="controls-sub">
-            Powered by Gemini &middot; Competitors checked automatically
+            Powered by Gemini
           </p>
         </div>
         <div class="ai-controls-right">
