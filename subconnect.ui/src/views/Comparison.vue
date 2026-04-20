@@ -25,7 +25,7 @@
       </div>
 
       <div class="summary-card">
-        <p class="card-label">Savings vs Market Average</p>
+        <p class="card-label">Savings vs Best Option</p>
         <p
           class="card-value"
           :class="averageDifference > 0 ? 'price-bad' : 'price-good'"
@@ -33,7 +33,7 @@
           {{ averageDifference > 0 ? '+' : '-' }}{{ currencySymbol
           }}{{ Math.abs(averageDifference).toFixed(2) }}
         </p>
-        <p class="card-sub">Difference from market pricing</p>
+        <p class="card-sub">Difference from best option</p>
       </div>
     </div>
 
@@ -41,7 +41,7 @@
     <div class="chart-card">
       <div class="chart-header">
         <div>
-          <h2 class="chart-title">Your Price vs Market Average</h2>
+          <h2 class="chart-title">Your Price vs Best Available Option</h2>
           <p class="chart-sub">See how your spending compares.</p>
         </div>
       </div>
@@ -55,7 +55,7 @@
 
               <div
                 class="bar"
-                :class="item.userPrice > item.benchmarkPrice ? 'bar-bad' : 'bar-good'"
+                :class="getBarClass(item)"
                 :style="{ width: getUserWidth(item) + '%' }"
               >
                 {{ currencySymbol }}{{ item.userPrice }}
@@ -63,13 +63,17 @@
             </div>
 
             <div class="bar-line">
-              <span class="bar-label">Avg</span>
+              <span class="bar-label">Best</span>
 
               <div
                 class="bar benchmark-bar"
                 :style="{ width: getBenchmarkWidth(item) + '%' }"
               >
-                {{ currencySymbol }}{{ item.benchmarkPrice }}
+                {{
+                  getDisplayBenchmark(item) > 0
+                    ? currencySymbol + getDisplayBenchmark(item).toFixed(2)
+                    : 'Run AI comparison'
+                }}
               </div>
             </div>
           </div>
@@ -108,13 +112,19 @@
               <td class="cost-cell">
                 {{ currencySymbol }}{{ item.userPrice }}
               </td>
-              <td>{{ currencySymbol }}{{ item.benchmarkPrice }}</td>
+              <td>
+                {{
+                  getDisplayBenchmark(item) > 0
+                    ? currencySymbol + getDisplayBenchmark(item).toFixed(2)
+                    : 'Not analysed'
+                }}
+              </td>
               <td>
                 <span
                   class="status-badge"
-                  :class="`status-badge--${item.status}`"
+                  :class="`status-badge--${getStatus(item)}`"
                 >
-                  {{ item.status }}
+                  {{ getStatus(item) }}
                 </span>
               </td>
             </tr>
@@ -368,27 +378,34 @@ export default {
   computed: {
     totalSavings() {
       return this.comparisons.reduce((sum, item) => {
-        if (item.userPrice > item.benchmarkPrice) {
-          return sum + (item.userPrice - item.benchmarkPrice);
+        const benchmark = this.getDisplayBenchmark(item);
+
+        if (item.userPrice > benchmark) {
+          return sum + (item.userPrice - benchmark);
         }
+
         return sum;
       }, 0);
     },
 
     score() {
       if (this.comparisons.length === 0) return 0;
+
       const good = this.comparisons.filter(
-        (i) => i.status === 'excellent',
+        (item) => this.getStatus(item) === 'excellent'
       ).length;
+
       return Math.round((good / this.comparisons.length) * 100);
     },
 
     averageDifference() {
       if (this.comparisons.length === 0) return 0;
+
       const total = this.comparisons.reduce(
-        (sum, item) => sum + (item.userPrice - item.benchmarkPrice),
+        (sum, item) => sum + (item.userPrice - this.getDisplayBenchmark(item)),
         0,
       );
+
       return total / this.comparisons.length;
     },
 
@@ -443,17 +460,12 @@ export default {
         const benchmarkPrice = match?.billingAmount || 0;
         const userPrice = sub.billingAmount || 0;
 
-        let status = 'fair';
-        if (userPrice > benchmarkPrice && benchmarkPrice > 0) status = 'poor';
-        if (userPrice < benchmarkPrice) status = 'excellent';
-
         return {
           id: sub.id,
           name: sub.serviceName,
           category: sub.category,
           userPrice,
           benchmarkPrice,
-          status,
           aiCache: sub.aiCache || {},
         };
       });
@@ -560,15 +572,70 @@ export default {
     },
 
     getUserWidth(item) {
-      const max = Math.max(item.userPrice, item.benchmarkPrice);
+      const benchmark = this.getDisplayBenchmark(item);
+      const max = Math.max(item.userPrice, benchmark);
+
       if (max === 0) return 0;
+
       return (item.userPrice / max) * 100;
     },
 
+    getDisplayBenchmark(item) {
+      const prices = [];
+
+      for (const [type, enabled] of Object.entries(this.enabledOptions)) {
+        if (!enabled) continue;
+
+      const options = item.aiCache?.[type]?.alternatives || [];
+
+      if (options.length > 0) {
+        const cheapest = Math.min(
+          ...options.map(option => Number(option.price))
+        );
+
+          prices.push(cheapest);
+        } 
+      } 
+
+      if (prices.length > 0) {
+        return Math.min(...prices);
+      }
+
+      if (item.benchmarkPrice > 0) {
+        return item.benchmarkPrice;
+      }
+
+      return 0;
+    },
+
+    getStatus(item) {
+      const benchmark = this.getDisplayBenchmark(item);
+
+      if (benchmark === 0) return 'fair';
+
+      if (item.userPrice < benchmark) return 'excellent';
+
+      if (item.userPrice > benchmark) return 'poor';
+
+      return 'fair';
+    },
+
+    getBarClass(item) {
+      const status = this.getStatus(item);
+
+      if (status === 'excellent') return 'bar-good';
+      if (status === 'poor') return 'bar-bad';
+
+      return 'bar-fair';
+    },
+
     getBenchmarkWidth(item) {
-      const max = Math.max(item.userPrice, item.benchmarkPrice);
+      const benchmark = this.getDisplayBenchmark(item);
+      const max = Math.max(item.userPrice, benchmark);
+
       if (max === 0) return 0;
-      return (item.benchmarkPrice / max) * 100;
+
+      return (benchmark / max) * 100;
     },
 
     toggleOption(key) {
@@ -787,6 +854,10 @@ export default {
 
 .bar-good {
   background: #16a34a;
+}
+
+.bar-fair {
+  background: #ea580c;
 }
 
 .bar-bad {
