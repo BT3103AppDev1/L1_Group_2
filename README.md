@@ -1,6 +1,8 @@
 # SubConnect
 
-**National University of Singapore** **BT3103: Application Systems Development for Business Analytics** SubConnect is a web-based financial analytics application designed to combat "subscription fatigue" and optimize personal expenditure. It provides users with a centralized, interactive dashboard to consolidate recurring expenses, track spending trends, enforce custom budget caps, and compare prices against market benchmarks.
+**National University of Singapore** | **BT3103: Application Systems Development for Business Analytics** SubConnect is a web-based financial analytics application designed to combat "subscription fatigue" and optimize personal expenditure. It provides users with a centralized, interactive dashboard to consolidate recurring expenses, track spending trends, enforce custom budget caps, and compare prices against market benchmarks.
+
+**🚀 Live Application:** [https://bt3103grp2.web.app/login](https://bt3103grp2.web.app/login)
 
 ## Project Team (Group 2)
 * **Abi** - Lead UI/UX Designer
@@ -17,11 +19,11 @@ This project is built using the required BT3103 tech stack:
 We manage our daily sprints and tasks using our team Scrum board. 
 * **[View our Daily Scrum Google Sheet Here](https://docs.google.com/spreadsheets/d/12e47DRC9Ijd8MLUqD2JoyOyr1-Gc2TajpSGFy-IvoS4/edit?gid=0#gid=0)**
 
+## Local Setup
 To run this project locally on your machine, follow these steps:
-Make sure you have [Node.js](https://nodejs.org/) installed on your computer.
 
+Make sure you have [Node.js](https://nodejs.org/) installed on your computer.
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/BT3103AppDev1/L1_Group_2.git
-   ```
+   git clone [https://github.com/BT3103AppDev1/L1_Group_2.git](https://github.com/BT3103AppDev1/L1_Group_2.git)
