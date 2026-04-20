@@ -33,7 +33,9 @@
           {{ averageDifference > 0 ? '+' : '-' }}{{ currencySymbol
           }}{{ Math.abs(averageDifference).toFixed(2) }}
         </p>
-        <p class="card-sub">You can save this much per subscription on average</p>
+        <p class="card-sub">
+          You can save this much per subscription on average
+        </p>
       </div>
     </div>
 
