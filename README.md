@@ -2,7 +2,7 @@
 
 **National University of Singapore** | **BT3103: Application Systems Development for Business Analytics** SubConnect is a web-based financial analytics application designed to combat "subscription fatigue" and optimize personal expenditure. It provides users with a centralized, interactive dashboard to consolidate recurring expenses, track spending trends, enforce custom budget caps, and compare prices against market benchmarks.
 
-**🚀 Live Application:** [https://bt3103grp2.web.app/login](https://bt3103grp2.web.app/login)
+** Live Application:** [https://bt3103grp2.web.app/login](https://bt3103grp2.web.app/login)
 
 ## Project Team (Group 2)
 * **Abi** - Lead UI/UX Designer
