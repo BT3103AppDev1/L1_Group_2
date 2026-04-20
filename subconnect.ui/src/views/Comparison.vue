@@ -37,6 +37,58 @@
       </div>
     </div>
 
+    <!-- ── AI Controls (Above Chart) ──────────────────────────── -->
+    <div class="ai-controls-section">
+      <!-- Controls bar -->
+      <div class="ai-controls-card">
+        <div class="ai-controls-left">
+          <span class="controls-heading">AI Savings Analysis</span>
+          <p class="controls-sub">Powered by Gemini</p>
+        </div>
+        <div class="ai-controls-right">
+          <div class="toggle-group">
+            <button
+              v-for="opt in optionList"
+              :key="opt.key"
+              class="toggle-pill"
+              :class="{ 'toggle-pill--active': enabledOptions[opt.key] }"
+              @click="toggleOption(opt.key)"
+            >
+              {{ opt.label }}
+            </button>
+          </div>
+          <button
+            class="btn-analyse"
+            :disabled="
+              aiLoading ||
+              autoRunning ||
+              comparisons.length === 0 ||
+              !hasUncachedData
+            "
+            @click="analyseAll"
+          >
+            <span v-if="aiLoading" class="spinner"></span>
+            <span v-else>&#10024;</span>
+            {{ aiLoading ? 'Analysing...' : 'Analyse' }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Error banner -->
+      <div v-if="aiError" class="ai-error-banner">
+        <span>{{ aiError }}</span>
+        <button class="ai-error-dismiss" @click="aiError = null">
+          &times;
+        </button>
+      </div>
+
+      <!-- Auto-running hint -->
+      <div v-if="autoRunning" class="ai-status-hint">
+        <span class="spinner spinner--sm"></span>
+        Fetching competitor alternatives...
+      </div>
+    </div>
+
     <!-- ── Chart ─────────────────────────────────────── -->
     <div class="chart-card">
       <div class="chart-header">
@@ -47,7 +99,7 @@
       </div>
 
       <div class="chart-list">
-        <div v-for="item in comparisons" :key="item.name" class="chart-row">
+        <div v-for="item in comparisons" :key="item.id" class="chart-row">
           <div class="chart-label">{{ item.name }}</div>
           <div class="bar-container">
             <div class="bar-line">
@@ -133,59 +185,8 @@
       </div>
     </div>
 
-    <!-- ── AI Analysis Section ─────────────────────────────────── -->
+    <!-- ── AI Results Section ─────────────────────────────────── -->
     <div class="ai-section">
-      <!-- Controls bar -->
-      <div class="ai-controls-card">
-        <div class="ai-controls-left">
-          <span class="controls-heading">AI Savings Analysis</span>
-          <p class="controls-sub">
-            Powered by Gemini
-          </p>
-        </div>
-        <div class="ai-controls-right">
-          <div class="toggle-group">
-            <button
-              v-for="opt in optionList"
-              :key="opt.key"
-              class="toggle-pill"
-              :class="{ 'toggle-pill--active': enabledOptions[opt.key] }"
-              @click="toggleOption(opt.key)"
-            >
-              {{ opt.label }}
-            </button>
-          </div>
-          <button
-            class="btn-analyse"
-            :disabled="
-              aiLoading ||
-              autoRunning ||
-              comparisons.length === 0 ||
-              !hasUncachedData
-            "
-            @click="analyseAll"
-          >
-            <span v-if="aiLoading" class="spinner"></span>
-            <span v-else>&#10024;</span>
-            {{ aiLoading ? 'Analysing...' : 'Analyse' }}
-          </button>
-        </div>
-      </div>
-
-      <!-- Error banner -->
-      <div v-if="aiError" class="ai-error-banner">
-        <span>{{ aiError }}</span>
-        <button class="ai-error-dismiss" @click="aiError = null">
-          &times;
-        </button>
-      </div>
-
-      <!-- Auto-running hint -->
-      <div v-if="autoRunning" class="ai-status-hint">
-        <span class="spinner spinner--sm"></span>
-        Fetching competitor alternatives...
-      </div>
-
       <!-- Results -->
       <template v-if="hasAnyResults">
         <h3 class="ai-results-title">AI Savings Report</h3>
@@ -392,7 +393,7 @@ export default {
       if (this.comparisons.length === 0) return 0;
 
       const good = this.comparisons.filter(
-        (item) => this.getStatus(item) === 'excellent'
+        (item) => this.getStatus(item) === 'excellent',
       ).length;
 
       return Math.round((good / this.comparisons.length) * 100);
@@ -548,7 +549,11 @@ export default {
           const firestoreUpdate = {};
           for (const [optType, data] of Object.entries(analysis.byType || {})) {
             const cacheEntry = {
-              alternatives: data.alternatives || [],
+              alternatives: (data.alternatives || []).map((alt) => ({
+                ...alt,
+                price: this.toMoneyNumber(alt.price),
+                savingsPerMonth: this.toMoneyNumber(alt.savingsPerMonth),
+              })),
               recommendation: data.recommendation || '',
             };
             // Update local reactive state immediately
@@ -568,70 +573,109 @@ export default {
             console.error('Cache write failed for', analysis.subId, err),
           );
         }
+
+        // Ensure chart/computed values refresh after nested cache updates.
+        this.comparisons = [...this.comparisons];
       }
+    },
+
+    toMoneyNumber(value) {
+      if (typeof value === 'number') {
+        return Number.isFinite(value) ? value : 0;
+      }
+
+      if (typeof value === 'string') {
+        const cleaned = value.replace(/[^0-9.-]/g, '');
+        const parsed = Number(cleaned);
+        return Number.isFinite(parsed) ? parsed : 0;
+      }
+
+      return 0;
     },
 
     getUserWidth(item) {
       const benchmark = this.getDisplayBenchmark(item);
-      const max = Math.max(item.userPrice, benchmark);
+      const userPrice = this.toMoneyNumber(item.userPrice);
+      const safeBenchmark = this.toMoneyNumber(benchmark);
+      const max = Math.max(userPrice, safeBenchmark);
 
       if (max === 0) return 0;
 
-      return (item.userPrice / max) * 100;
+      return (userPrice / max) * 100;
     },
 
     getDisplayBenchmark(item) {
       const prices = [];
+      let hasAnalysedEnabledType = false;
 
       for (const [type, enabled] of Object.entries(this.enabledOptions)) {
         if (!enabled) continue;
 
-      const options = item.aiCache?.[type]?.alternatives || [];
+        const cacheForType = item.aiCache?.[type];
+        if (cacheForType) hasAnalysedEnabledType = true;
 
-      if (options.length > 0) {
-        const cheapest = Math.min(
-          ...options.map(option => Number(option.price))
-        );
+        const options = cacheForType?.alternatives || [];
 
-          prices.push(cheapest);
-        } 
-      } 
+        if (options.length > 0) {
+          const numericPrices = options
+            .map((option) => this.toMoneyNumber(option.price))
+            .filter((price) => price > 0);
+
+          if (numericPrices.length > 0) {
+            const cheapest = Math.min(...numericPrices);
+            prices.push(cheapest);
+          }
+        }
+      }
 
       if (prices.length > 0) {
         return Math.min(...prices);
       }
 
-      if (item.benchmarkPrice > 0) {
-        return item.benchmarkPrice;
+      // If AI already analyzed enabled types but found no cheaper alternative,
+      // treat the user's current price as the best available option.
+      if (hasAnalysedEnabledType) {
+        return this.toMoneyNumber(item.userPrice);
+      }
+
+      const fallbackBenchmark = this.toMoneyNumber(item.benchmarkPrice);
+      if (fallbackBenchmark > 0) {
+        return fallbackBenchmark;
       }
 
       return 0;
     },
 
     getStatus(item) {
-      const benchmark = this.getDisplayBenchmark(item);
+      const benchmark = this.toMoneyNumber(this.getDisplayBenchmark(item));
+      const userPrice = this.toMoneyNumber(item.userPrice);
 
       if (benchmark === 0) return 'fair';
 
-      if (item.userPrice < benchmark) return 'excellent';
+      if (userPrice <= benchmark) return 'excellent';
 
-      if (item.userPrice > benchmark) return 'poor';
+      if (userPrice > benchmark) return 'poor';
 
       return 'fair';
     },
 
     getBarClass(item) {
-      const status = this.getStatus(item);
+      const benchmark = this.toMoneyNumber(this.getDisplayBenchmark(item));
+      const userPrice = this.toMoneyNumber(item.userPrice);
 
-      if (status === 'excellent') return 'bar-good';
-      if (status === 'poor') return 'bar-bad';
+      if (benchmark <= 0) return 'bar-fair';
 
-      return 'bar-fair';
+      if (userPrice <= benchmark) return 'bar-good';
+
+      const diffRatio = (userPrice - benchmark) / benchmark;
+      if (diffRatio <= 0.5) return 'bar-fair';
+      return 'bar-bad';
     },
 
     getBenchmarkWidth(item) {
-      const benchmark = this.getDisplayBenchmark(item);
-      const max = Math.max(item.userPrice, benchmark);
+      const benchmark = this.toMoneyNumber(this.getDisplayBenchmark(item));
+      const userPrice = this.toMoneyNumber(item.userPrice);
+      const max = Math.max(userPrice, benchmark);
 
       if (max === 0) return 0;
 
@@ -779,6 +823,14 @@ export default {
   color: #dc2626;
 }
 
+/* ── AI Controls (Above Chart) ── */
+.ai-controls-section {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 24px;
+}
+
 /* ── Chart ── */
 .chart-card {
   background: #fff;
@@ -811,11 +863,19 @@ export default {
 .chart-row {
   display: flex;
   flex-direction: column;
+  background: #fafaff;
+  border: 1px solid #ececff;
+  border-left: 3px solid #6c47ff;
+  border-radius: 10px;
+  padding: 10px 12px;
 }
 
 .chart-label {
-  font-size: 0.8rem;
-  margin-bottom: 4px;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #1a1a2e;
+  letter-spacing: 0.01em;
+  margin-bottom: 8px;
 }
 
 .bar-container {
