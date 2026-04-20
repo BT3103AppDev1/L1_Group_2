@@ -25,7 +25,7 @@
       </div>
 
       <div class="summary-card">
-        <p class="card-label">Savings vs Best Option</p>
+        <p class="card-label">Average Potential Savings</p>
         <p
           class="card-value"
           :class="averageDifference > 0 ? 'price-bad' : 'price-good'"
@@ -33,7 +33,7 @@
           {{ averageDifference > 0 ? '+' : '-' }}{{ currencySymbol
           }}{{ Math.abs(averageDifference).toFixed(2) }}
         </p>
-        <p class="card-sub">Difference from best option</p>
+        <p class="card-sub">You can save this much per subscription on average</p>
       </div>
     </div>
 
@@ -378,36 +378,59 @@ export default {
 
   computed: {
     totalSavings() {
-      return this.comparisons.reduce((sum, item) => {
-        const benchmark = this.getDisplayBenchmark(item);
+      const monthlySavings = this.comparisons.reduce((sum, item) => {
+        const userPrice = this.toMoneyNumber(item.userPrice);
+        const benchmark = this.toMoneyNumber(this.getDisplayBenchmark(item));
 
-        if (item.userPrice > benchmark) {
-          return sum + (item.userPrice - benchmark);
+        // Ignore rows without a usable benchmark.
+        if (benchmark <= 0) return sum;
+
+        if (userPrice > benchmark) {
+          return sum + (userPrice - benchmark);
         }
 
         return sum;
       }, 0);
+
+      // Card label is annual, so convert monthly gap to yearly savings.
+      return monthlySavings * 12;
     },
 
     score() {
-      if (this.comparisons.length === 0) return 0;
+      const comparable = this.comparisons.filter(
+        (item) => this.toMoneyNumber(this.getDisplayBenchmark(item)) > 0,
+      );
+      if (comparable.length === 0) return 0;
 
-      const good = this.comparisons.filter(
-        (item) => this.getStatus(item) === 'excellent',
-      ).length;
+      const total = comparable.reduce((sum, item) => {
+        const benchmark = this.toMoneyNumber(this.getDisplayBenchmark(item));
+        const userPrice = this.toMoneyNumber(item.userPrice);
 
-      return Math.round((good / this.comparisons.length) * 100);
+        if (userPrice <= benchmark) return sum + 100;
+        if (userPrice <= benchmark * 1.5) return sum + 60;
+        return sum + 20;
+      }, 0);
+
+      return Math.round(total / comparable.length);
     },
 
     averageDifference() {
-      if (this.comparisons.length === 0) return 0;
+      const comparable = this.comparisons
+        .map((item) => {
+          const benchmark = this.toMoneyNumber(this.getDisplayBenchmark(item));
+          const userPrice = this.toMoneyNumber(item.userPrice);
+          return { benchmark, userPrice };
+        })
+        .filter((item) => item.benchmark > 0);
 
-      const total = this.comparisons.reduce(
-        (sum, item) => sum + (item.userPrice - this.getDisplayBenchmark(item)),
+      if (comparable.length === 0) return 0;
+
+      const total = comparable.reduce(
+        (sum, item) => sum + (item.userPrice - item.benchmark),
         0,
       );
 
-      return total / this.comparisons.length;
+      return total / comparable.length;
     },
 
     // True if any (comp, optType) pair is enabled but not yet cached
